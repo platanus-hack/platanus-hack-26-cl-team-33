@@ -183,7 +183,7 @@ def normalize(req: dict) -> dict:
     if year not in YEARS:
         raise ValueError(f"El año debe estar entre {YEARS[0]} y {YEARS[-1]}")
     rule = req.get("rule", "status_quo")
-    if rule not in SCENARIOS:
+    if rule not in RULES:
         raise ValueError(f"Regla desconocida: {rule}")
     return {"lat": lat, "lon": lon, "it_mw": it_mw, "cooling": cooling, "year": year,
             "hv_line": bool(req.get("hv_line", False)),

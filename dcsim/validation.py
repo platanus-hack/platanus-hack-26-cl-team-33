@@ -104,7 +104,9 @@ def run_validation(n: int = 200, use_cache: bool = True) -> dict:
         "google_power", "Potencia media de Google Quilicura en 2024",
         "¿Cuánta electricidad usó en promedio Google Quilicura en 2024?",
         o, sim, "MW",
-        OBS["google_power_2024"]["src"], "validación", _within(o, sim, 0.1)))
+        OBS["google_power_2024"]["src"], "calibración", _within(o, sim, 0.1),
+        "No es una prueba ciega: el tamaño de Google (2 × 16 MW) sale de los 30 MW que declara "
+        "y su factor de carga alto (0,92) es un supuesto para una hiperescala propia."))
     o = OBS["quilicura_share"]["value"]
     q = C.COMMUNE_IDX["quilicura"]
     cs = res["communes"]["c_share"]
@@ -169,23 +171,29 @@ def run_validation(n: int = 200, use_cache: bool = True) -> dict:
         mode_code = int(probs[i].argmax())
         hit = _hit(mode_code, real_code)
         ok += hit
-        ok_naive += _hit(_naive_status(p), real_code)
+        naive_hit = _hit(_naive_status(p), real_code)
+        ok_naive += naive_hit
         rows.append({"id": p.id, "name": p.name, "real": p.real_status, "model": mode_code,
                      "p_real": round(float(probs[i, real_code]), 2), "hit": bool(hit),
-                     "anonymous": p.anonymous})
+                     "naive_hit": bool(naive_hit), "anonymous": p.anonymous})
     acc = ok / len(rows)
     acc_naive = ok_naive / len(rows)
     named = [r for r in rows if not r["anonymous"]]
     acc_named = sum(r["hit"] for r in named) / len(named)
+    acc_naive_named = sum(r["naive_hit"] for r in named) / len(named)
     checks.append(_check(
         "status", "Estado de cada proyecto conocido a noviembre de 2026",
         "¿Acierta el modelo qué proyectos están operando, en obra, en trámite o esperando?",
         len(rows), {"accuracy": round(100 * acc, 1), "accuracy_named": round(100 * acc_named, 1),
-                    "naive": round(100 * acc_naive, 1), "rows": rows}, "%",
+                    "naive": round(100 * acc_naive, 1),
+                    "naive_named": round(100 * acc_naive_named, 1),
+                    "n_named": len(named), "rows": rows}, "%",
         "Informe (estado a nov-2026)", "validación", acc > acc_naive,
         "Se compara el estado más probable en 200 simulaciones con el estado real. Pasa si "
         f"acierta más que una regla trivial (lista del CEN espera; anunciado hace 3 o más años "
-        f"opera), que acierta {round(100 * acc_naive)}%."))
+        f"opera), que acierta {round(100 * acc_naive)}%. En los {len(named)} proyectos con nombre "
+        f"público el modelo acierta {round(100 * acc_named)}% y la regla trivial "
+        f"{round(100 * acc_naive_named)}%; los otros son supuestos que cuadran el inventario."))
     return {"checks": checks, "n": res["meta"]["n"],
             "passed": sum(c["pass"] for c in checks), "total": len(checks),
             "series": {k: res["series"][k] for k in ("demand_rm_dec", "it_chile_jun",

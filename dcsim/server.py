@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import threading
 from collections import Counter, OrderedDict
@@ -15,7 +16,8 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
@@ -40,6 +42,13 @@ async def _lifespan(_app):
 
 
 app = FastAPI(title="Simulador de data centers en Chile", lifespan=_lifespan)
+
+
+@app.exception_handler(RequestValidationError)
+async def _invalid_request(_request, exc: RequestValidationError) -> JSONResponse:
+    """422 sin repetir la entrada: un NaN o un infinito no se puede devolver como JSON."""
+    detail = [{k: e[k] for k in ("loc", "msg", "type") if k in e} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": detail})
 
 
 @app.middleware("http")
@@ -159,6 +168,7 @@ class PolicyIn(BaseModel):
 
 
 class RunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     policy: PolicyIn
 
 
@@ -221,10 +231,13 @@ def baseline() -> dict:
 @app.get("/api/place/site")
 def place_site(lat: float, lon: float) -> dict:
     """Comuna, nodo de red, acuífero y hogares alrededor de un punto (rápido, sin simular)."""
+    if not (math.isfinite(lat) and math.isfinite(lon) and -56 < lat < -17 and -76 < lon < -66):
+        raise HTTPException(400, "El punto debe estar en Chile")
     return PL.site_info(round(lat, 4), round(lon, 4))
 
 
 class PlaceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     lat: float
     lon: float
     it_mw: float = 30
@@ -329,8 +342,17 @@ def sensitivity_summary(sens: dict) -> dict:
 STORY_TABS = ["status_quo", "mesa", "aire", "acumulativa", "norte", "paquete"]
 STORY_KEYS = ["it_chile", "dc_share_national", "water_ls_rm", "conflict_rm", "litigations",
               "invest_lost", "invest_realized", "bill_pct", "waitlist_mw"]
-STORY_CHECKS = ["rm_2021", "google_water", "rm_2025", "waitlist", "litigations",
-                "conflict_pattern"]
+# la tabla «Probado con lo que ya pasó» muestra solo chequeos de validación (ninguno se usó para
+# ajustar parámetros); los de calibración están en los catorce chequeos del detalle técnico
+STORY_CHECKS = ["rm_2021", "rm_2025", "chile_2025", "national_share", "status"]
+
+
+def _brief(check: dict) -> dict:
+    """Un chequeo sin la lista proyecto por proyecto (la portada solo muestra el total)."""
+    sim = check["sim"]
+    if isinstance(sim, dict) and "rows" in sim:
+        sim = {k: v for k, v in sim.items() if k != "rows"}
+    return {**check, "sim": sim}
 
 
 @app.get("/api/story")
@@ -354,8 +376,9 @@ def story() -> dict:
         return {"year": 2035, "tabs": tabs, "passed": val["passed"], "total": val["total"],
                 "n_validation": kinds["validación"], "n_calibration": kinds["calibración"],
                 "n_custom": N_CUSTOM,
-                "checks": [checks[i] for i in STORY_CHECKS if i in checks],
-                "findings": findings(), "sensitivity": sensitivity_summary(sensitivity())}
+                "checks": [_brief(checks[i]) for i in STORY_CHECKS if i in checks],
+                "findings": findings(), "sensitivity": sensitivity_summary(sensitivity()),
+                "n_sensitivity": sensitivity().get("n_sims")}
     return _cached("story", build)
 
 

@@ -381,7 +381,8 @@ def report(out: dict, results: dict) -> None:
         print(f"{f['id']:14s} {_fmt(f['id'], f['base']):>15s} {rng:>17s} "
               f"{f['holds']:>5d}/{f['total']:<6d} {f['holds_consistent']:>5d}/"
               f"{f['total_consistent']:<7d} {_fmt(f['id'], j['value']):>15s} "
-              f"{'sí' if j['holds'] else 'NO':>4s}  {', '.join(t['key'] for t in f['top'])}")
+              f"{('sí' if j['holds'] else 'NO') if j['n'] else '—':>4s}  "
+              f"{', '.join(t['key'] for t in f['top'])}")
         fails = [f"{r['key']}:{end}{'' if r['consistent_' + end] else '*'}="
                  f"{_fmt(f['id'], r[end])}"
                  for r in f["oat"] for end in ("low", "high") if not r["holds_" + end]]
@@ -402,6 +403,13 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--factors", default="", help="solo estas claves (separadas por coma)")
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args(argv)
+    if a.factors:
+        unknown = set(a.factors.split(",")) - {p.key for p in FACTORS}
+        if unknown:
+            ap.error(f"supuestos desconocidos: {', '.join(sorted(unknown))}")
+    partial = a.factors or a.n_oat != N_OAT or a.n_joint != N_JOINT
+    if partial and os.path.abspath(a.out) == os.path.abspath(str(OUT)):
+        ap.error("una corrida parcial no puede sobrescribir cache/sensitivity.json: usa --out")
     factors = [p for p in FACTORS if not a.factors or p.key in a.factors.split(",")]
     settings = {"base": (("base",), a.n_oat)}
     for p in factors:
@@ -419,6 +427,8 @@ def main(argv: list[str] | None = None) -> None:
         print(f"\n{len(errors)} simulaciones fallaron:")
         for e in errors[:30]:
             print("  ", e)
+        # Con futuros faltantes los conteos "se mantiene" serían engañosos: no se escribe nada.
+        raise SystemExit(f"No se escribió {a.out}: corrige las fallas y vuelve a correr.")
     out = assemble(results, factors, a.n_oat, a.n_joint, n_sims, seconds)
     with open(a.out, "w") as fh:
         json.dump(out, fh, ensure_ascii=False, indent=1, allow_nan=False)
