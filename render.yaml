@@ -4,12 +4,12 @@ services:
   - type: web
     name: aterriza
     runtime: python
-    plan: free
+    plan: standard            # 1 CPU, 2 GB (ID nuevo: 1c-2g). Siempre encendido; "free" se duerme tras 15 min
     buildCommand: pip install uv && uv sync --frozen --no-dev
     startCommand: .venv/bin/uvicorn dcsim.server:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/status
     envVars:
-      - key: DCSIM_WORKERS      # un solo proceso de simulación: la instancia gratuita tiene 512 MB
+      - key: DCSIM_WORKERS      # un proceso por CPU: Standard tiene 1
         value: "1"
-      - key: DCSIM_N_CUSTOM     # "Tu regla" corre 60 futuros para responder rápido en una CPU chica
-        value: "60"
+      - key: DCSIM_N_CUSTOM     # futuros que corre "Tu regla"; bajar a 60 en el plan free
+        value: "100"

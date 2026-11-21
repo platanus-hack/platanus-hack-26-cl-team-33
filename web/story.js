@@ -45,6 +45,8 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
   .then(([story, meta]) => {
     S.story = story;
     S.meta = meta;
+    S.noteText = `Corre ${story.n_custom || 100} futuros; tarda unos segundos.`;
+    $("#customNote").textContent = S.noteText;
     renderNumbers(false);
     fillFindings();
     fillProof();
@@ -167,7 +169,7 @@ $("#custom").addEventListener("submit", async (e) => {
   };
   const btn = $("#runCustom");
   btn.disabled = true;
-  $("#customNote").textContent = "Simulando 100 futuros…";
+  $("#customNote").textContent = `Simulando ${S.story.n_custom || 100} futuros…`;
   try {
     const res = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ policy: pol }) }).then((r) => r.json());
@@ -175,7 +177,7 @@ $("#custom").addEventListener("submit", async (e) => {
     S.customValues = Object.fromEntries(KEYS.map((k) => [k, res.series[k].p50[yi(2035)]]));
     S.customText = describe(pol);
     S.editing = false;
-    $("#customNote").textContent = "Corre 100 futuros, unos 5 segundos.";
+    $("#customNote").textContent = S.noteText;
     select("custom");
   } catch {
     $("#customNote").textContent = "No se pudo simular. Intenta de nuevo.";

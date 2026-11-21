@@ -181,6 +181,7 @@ def story() -> dict:
         val = _cached("validation", lambda: run_validation(n=N_PRESET))
         checks = {c["id"]: c for c in val["checks"]}
         return {"year": 2035, "tabs": tabs, "passed": val["passed"], "total": val["total"],
+                "n_custom": N_CUSTOM,
                 "checks": [checks[i] for i in STORY_CHECKS if i in checks],
                 "findings": findings()}
     return _cached("story", build)
