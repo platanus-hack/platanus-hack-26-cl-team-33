@@ -326,12 +326,12 @@ function updateMap() {
   if (diff) {
     $("#rampLow").textContent = `−${fmt(max, m.d)} ${m.unit}`;
     $("#rampHigh").textContent = `+${fmt(max, m.d)} ${m.unit}`;
-    rampEl.style.background = `linear-gradient(90deg, ${COBALT_RAMP[5]}, ${MID}, ${WARM})`;
+    rampEl.innerHTML = [-1, -0.66, -0.33, 0, 0.33, 0.66, 1].map((t) => `<b style="background:${diverge(t)}"></b>`).join("");
     rampEl.title = "Menos que como hoy, igual, más que como hoy";
   } else {
     $("#rampLow").textContent = "0";
     $("#rampHigh").textContent = `${fmt(max, m.d)} ${m.unit}`;
-    rampEl.style.background = `linear-gradient(90deg, ${COBALT_RAMP.join(", ")})`;
+    rampEl.innerHTML = [0, 0.17, 0.33, 0.5, 0.67, 0.83, 1].map((t) => `<b style="background:${ramp(t)}"></b>`).join("");
     rampEl.title = m.label;
   }
   communeLayer.clearLayers();
