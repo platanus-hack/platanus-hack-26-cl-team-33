@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data centers y comunidades</title>
+  <meta name="description" content="Simulador del efecto acumulado de los data centers en las comunidades de Chile, 2012–2035.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand">Data centers y comunidades <span>· Chile 2012–2035</span></div>
+      <nav class="steps-nav" aria-label="Secciones">
+        <a href="#creer">1 · ¿Le creemos?</a>
+        <a href="#elegir">2 · Elige una regla</a>
+        <a href="#gente">3 · Qué cambia</a>
+        <a href="#hipotesis">4 · Hipótesis</a>
+        <a href="#supuestos">Supuestos</a>
+      </nav>
+      <button class="theme-btn" id="themeBtn" aria-label="Cambiar tema claro u oscuro">◐</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">SIMULADOR · EFECTO ACUMULADO</div>
+      <h1>¿Qué le pasa a la gente cuando los data centers se suman?</h1>
+      <p class="lead">
+        Chile aprueba los data centers de a uno. Este simulador pone todos los proyectos reales
+        en la misma red eléctrica, el mismo acuífero y las mismas comunas, y proyecta qué pasa hasta
+        2035 con distintas reglas. Cada resultado es el resumen de 200 futuros posibles.
+      </p>
+      <ol class="how">
+        <li><b class="n">1</b><div><strong>Comprueba</strong><span>que el modelo reproduce lo que ya pasó entre 2012 y 2026.</span></div></li>
+        <li><b class="n">2</b><div><strong>Elige una regla</strong><span>por ejemplo, evaluar los proyectos en conjunto o prohibir el agua.</span></div></li>
+        <li><b class="n">3</b><div><strong>Mira qué cambia</strong><span>en agua, luz, vecinos, conflictos, empleo e inversión, comuna por comuna.</span></div></li>
+      </ol>
+    </section>
+
+    <!-- 1. VALIDACIÓN -->
+    <section class="block" id="creer">
+      <div class="sec-head"><span class="sec-num">1</span><h2>¿Le podemos creer al modelo?</h2></div>
+      <p class="sec-lead">
+        Antes de mirar el futuro, dejamos que el modelo simule solo la historia 2012–2026: le damos
+        cuándo se anunció cada proyecto real y él decide cuándo se aprueba, se construye, se lleva
+        a tribunales o queda esperando red. Después comparamos con lo que efectivamente pasó.
+      </p>
+      <div id="validation"><div class="loading"><div class="spinner"></div>Simulando la historia 200 veces…</div></div>
+    </section>
+
+    <!-- 2. ESCENARIOS -->
+    <section class="block" id="elegir">
+      <div class="sec-head"><span class="sec-num">2</span><h2>Elige una regla para el futuro</h2></div>
+      <p class="sec-lead">
+        La historia hasta noviembre de 2026 queda fija con lo que realmente pasó. Desde enero de 2027
+        aplica la regla que elijas. Siempre la comparamos con <b>seguir como hoy</b>.
+      </p>
+      <div class="scen-grid" id="scenarios" role="group" aria-label="Escenarios"></div>
+      <details class="more custom" id="customBox">
+        <summary>Armar mi propia regla</summary>
+        <div class="card" style="margin-top:12px">
+          <div class="levers" id="levers"></div>
+          <div style="display:flex;gap:10px;margin-top:16px;align-items:center;flex-wrap:wrap">
+            <button class="btn" id="runCustom">Simular mi regla</button>
+            <span class="sub" id="customMsg" style="margin:0">Toma ~5 segundos (100 futuros).</span>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- 3. RESULTADOS -->
+    <section class="block" id="gente">
+      <div class="sec-head"><span class="sec-num">3</span><h2>Qué cambia para la gente</h2></div>
+      <p class="sec-lead" id="resultsLead">Valores típicos (mediana de los futuros simulados).</p>
+      <div class="compare-bar">
+        <div class="who" id="who"></div>
+        <div class="seg" role="group" aria-label="Año">
+          <button data-year="2030" aria-pressed="false">2030</button>
+          <button data-year="2035" aria-pressed="true">2035</button>
+        </div>
+      </div>
+      <div class="tiles" id="tiles"></div>
+
+      <h3 style="margin-top:28px">Mapa: dónde se instalan y a quién le toca</h3>
+      <p class="sub">Mueve el año o dale play. Toca un círculo para ver el detalle.</p>
+      <div class="card map-card">
+        <div id="map" role="img" aria-label="Mapa de data centers y comunas"></div>
+        <aside class="map-side">
+          <div class="map-controls">
+            <label for="yearSlider">Año en el mapa</label>
+            <div class="year-row">
+              <button class="play" id="playBtn" aria-label="Reproducir">▶</button>
+              <span class="year-big" id="yearLabel">2026</span>
+              <input type="range" id="yearSlider" min="2012" max="2035" value="2026" aria-label="Año">
+            </div>
+            <div class="when" id="whenLabel"></div>
+          </div>
+          <div class="map-controls">
+            <label for="metricSel">Color de las comunas</label>
+            <select id="metricSel" class="lever" style="padding:7px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink)">
+              <option value="c_conflict">Hogares movilizados en contra (%)</option>
+              <option value="c_share">Electricidad comunal que usan los DC (%)</option>
+              <option value="c_water_ls">Agua que usan los DC (L/s)</option>
+              <option value="c_h500">Hogares a menos de 500 m de un DC grande</option>
+              <option value="c_it">Data centers operando (MW)</option>
+            </select>
+          </div>
+          <div class="map-legend" id="mapLegend"></div>
+          <div class="info-box" id="infoBox">Toca una comuna o un data center.</div>
+        </aside>
+      </div>
+
+      <h3 style="margin-top:28px">Cómo evoluciona</h3>
+      <p class="sub">Línea: valor típico. Franja: 90% de los futuros simulados. Zona gris: historia real.</p>
+      <div class="charts-grid" id="charts"></div>
+
+      <h3 style="margin-top:28px">Comuna por comuna: cargas y beneficios</h3>
+      <p class="sub" id="tableSub"></p>
+      <div class="card table-wrap"><table class="data" id="communeTable"></table></div>
+    </section>
+
+    <!-- 4. HIPÓTESIS -->
+    <section class="block" id="hipotesis">
+      <div class="sec-head"><span class="sec-num">4</span><h2>¿Se cumplen las hipótesis del informe?</h2></div>
+      <p class="sec-lead">
+        El informe de investigación propuso efectos esperables y algunos contraintuitivos. El modelo
+        los pone a prueba comparando cada regla con seguir como hoy, en los mismos 200 futuros.
+      </p>
+      <div class="hyps" id="hyps"><div class="loading"><div class="spinner"></div>Calculando…</div></div>
+    </section>
+
+    <!-- SUPUESTOS -->
+    <section class="block" id="supuestos">
+      <div class="sec-head"><span class="sec-num">+</span><h2>Cómo funciona y qué supone</h2></div>
+      <p class="sec-lead">Un modelo de agentes: cada proyecto, el regulador, la red y ~2.300 hogares sintéticos toman decisiones mes a mes, y esas decisiones se afectan entre sí.</p>
+      <div class="card">
+        <div class="flow">
+          <div class="st"><b>1 · Anuncio</b>Una empresa elige comuna, enfriamiento y cuánto diésel declarar.</div>
+          <div class="st"><b>2 · Permiso</b>Si declara más del umbral de combustible va al <span class="term" title="Sistema de Evaluación de Impacto Ambiental: evaluación con participación ciudadana.">SEIA</span>; si no, a <span class="term" title="Consulta de pertinencia: el SEA decide si el proyecto debe entrar al SEIA. No tiene participación ciudadana.">pertinencia</span>.</div>
+          <div class="st"><b>3 · Red</b>Pide conexión al <span class="term" title="Coordinador Eléctrico Nacional: gestiona las conexiones a la red.">CEN</span>. Si el nodo está lleno, espera, se muda o desiste.</div>
+          <div class="st"><b>4 · Obra</b>Construcción de 1,5 a 2,5 años. Genera empleo temporal.</div>
+          <div class="st"><b>5 · Operación</b>Usa electricidad y agua, prueba sus generadores diésel y paga patentes.</div>
+        </div>
+        <div class="loop">↺ <b>El bucle que una planilla no ve:</b> los hogares cercanos sienten ruido, diésel, miedo por el agua y la acumulación de proyectos; reciben empleo y patentes. Su oposición se contagia en la comuna, puede llevar un proyecto a tribunales y atrasarlo o anularlo, y cambia dónde eligen instalarse los siguientes.</div>
+      </div>
+      <details class="more">
+        <summary>Todos los parámetros, con su rango y fuente</summary>
+        <div class="card table-wrap" style="margin-top:12px"><table class="data params-table" id="paramsTable"></table></div>
+      </details>
+      <details class="more">
+        <summary>Inventario de proyectos usado</summary>
+        <div class="card table-wrap" style="margin-top:12px"><table class="data params-table" id="projectsTable"></table></div>
+      </details>
+      <details class="more">
+        <summary>Vacíos de información (tratados como supuestos con rango)</summary>
+        <div class="card" style="margin-top:12px">
+          <ul style="margin:0;padding-left:18px;color:var(--ink-2)">
+            <li>Consumo real de agua y electricidad por data center: solo hay datos de Google Quilicura y del CEN.</li>
+            <li>Recarga del acuífero y conexión acuífero–humedal en Quilicura: el nivel del acuífero es un índice, no una predicción en metros.</li>
+            <li>Factor de carga real y crecimiento por inteligencia artificial.</li>
+            <li>Horas reales de uso del diésel.</li>
+            <li>Efecto en la tarifa regulada: no hay estudio chileno; el alza de la cuenta es una hipótesis con rango.</li>
+            <li>Patentes pagadas y empleo local efectivo.</li>
+            <li>Cuánto cambia la oposición con las compensaciones, y probabilidades de litigio y de éxito.</li>
+            <li>Ubicación y tamaño exacto de varios proyectos; los DC sin nombre público se marcan como tales.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    Modelo construido a partir del informe "Simular el impacto de un data center en su comunidad (foco Chile)",
+    noviembre de 2026. Las cifras de prensa y consultoras no son fuentes primarias. Población: Censo 2017 (INE).
+    Mapa base © OpenStreetMap, © CARTO.
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

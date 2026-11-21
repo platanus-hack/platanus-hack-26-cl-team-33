@@ -102,3 +102,10 @@ def policy_from_dict(d: dict | None) -> Policy:
         return STATUS_QUO
     allowed = Policy.__dataclass_fields__.keys()
     return replace(STATUS_QUO, **{k: v for k, v in d.items() if k in allowed})
+
+
+# Escenarios auxiliares para probar hipótesis (no se muestran como tarjetas)
+HYPOTHESIS_SCENARIOS: dict[str, Policy] = {
+    "solo_transparencia": replace(STATUS_QUO, transparency=True),
+    "solo_fondo": replace(STATUS_QUO, community_fund_usd_mw=20_000),
+}

@@ -45,48 +45,54 @@ def run_validation(n: int = 200, use_cache: bool = True) -> dict:
     sim = _band(S["demand_rm_dec"], 2021)
     checks.append(_check(
         "rm_2021", "Consumo eléctrico de los data centers de la RM, fin de 2021",
-        "¿Cuánta electricidad usaban los DC de Santiago en 2021?", o, sim, "MW",
+        "¿Cuánta electricidad usaban los data centers de la RM a fines de 2021?",
+        o, sim, "MW",
         OBS["rm_demand_2021"]["src"], "validación", _within(o, sim, 0.2)))
     o = OBS["rm_demand_2025"]["value"]
     sim = _band(S["demand_rm_dec"], 2025)
     checks.append(_check(
         "rm_2025", "Consumo eléctrico de los data centers de la RM, fin de 2025",
-        "¿Cuánta electricidad usaban a fines de 2025?", o, sim, "MW",
+        "¿Cuánta electricidad usaban los data centers de la RM a fines de 2025?",
+        o, sim, "MW",
         OBS["rm_demand_2025"]["src"], "validación", _within(o, sim, 0.2)))
     o = OBS["chile_demand_2025"]["value"]
     sim = _band(S["demand_chile_dec"], 2025)
     checks.append(_check(
         "chile_2025", "Consumo eléctrico de los data centers de todo Chile, 2025",
-        "¿Y en todo el país?", o, sim, "MW", OBS["chile_demand_2025"]["src"], "validación",
+        "¿Cuánta electricidad usaban los data centers de todo Chile en 2025?",
+        o, sim, "MW", OBS["chile_demand_2025"]["src"], "validación",
         _within(o, sim, 0.2), "Las fuentes miden distinto: el CEN incluye más que la RM."))
     o = OBS["rm_it_2026"]["value"]
     sim = _band(S["it_rm_jun"], 2026)
     checks.append(_check(
         "it_2026", "Capacidad instalada de data centers en Santiago, mediados de 2026",
-        "¿Cuántos MW de servidores había instalados en la RM?", o, sim, "MW TI",
+        "¿Cuántos MW de servidores había instalados en la RM a mediados de 2026?",
+        o, sim, "MW TI",
         OBS["rm_it_2026"]["src"], "calibración", _within(o, sim, 0.15),
         "Colliers cuenta 255 MW para todo Chile con otra definición. Parte del inventario son "
-        "DC sin nombre público dimensionados para cuadrar. El modelo construye Google "
-        "Cerrillos antes de 2026 en parte de las corridas; en la realidad un fallo lo detuvo."))
+        "DC sin nombre público dimensionados para cuadrar."))
     lo, hi = OBS["n_dc_2026"]["low"], OBS["n_dc_2026"]["high"]
     sim = _band(S["n_dc_jun"], 2026)
     checks.append(_check(
         "ndc_2026", "Número de data centers operando, mediados de 2026",
-        "¿Cuántos data centers había?", {"low": lo, "high": hi}, sim, "DC",
+        "¿Cuántos data centers operaban en Chile a mediados de 2026?",
+        {"low": lo, "high": hi}, sim, "DC",
         OBS["n_dc_2026"]["src"], "calibración", lo - 2 <= sim["p50"] <= hi + 2,
         "El inventario incluye DC sin nombre público para cuadrar con Colliers/GPS."))
     o = OBS["google_water_2024"]["value"]
     sim = _band(S["google_water_ml"], 2024)
     checks.append(_check(
         "google_water", "Agua usada por Google Quilicura en 2024",
-        "¿Cuánta agua consumió el DC de Google en Quilicura?", o, sim, "millones de litros",
+        "¿Cuánta agua consumió el data center de Google en Quilicura en 2024?",
+        o, sim, "millones de litros",
         OBS["google_water_2024"]["src"], "calibración", _within(o, sim, 0.1),
         "El agua por kWh (1,74 L/kWh) se calibró con este mismo dato."))
     o = OBS["google_power_2024"]["value"]
     sim = _band(S["google_power_mw"], 2024)
     checks.append(_check(
         "google_power", "Potencia media de Google Quilicura en 2024",
-        "¿Cuánta electricidad usó en promedio?", o, sim, "MW",
+        "¿Cuánta electricidad usó en promedio Google Quilicura en 2024?",
+        o, sim, "MW",
         OBS["google_power_2024"]["src"], "validación", _within(o, sim, 0.1)))
     o = OBS["quilicura_share"]["value"]
     q = C.COMMUNE_IDX["quilicura"]
@@ -94,33 +100,37 @@ def run_validation(n: int = 200, use_cache: bool = True) -> dict:
     sim = {k: round(100 * cs[k][q][_yi(2025)], 1) for k in ("p5", "p50", "p95")}
     checks.append(_check(
         "quilicura_share", "Parte del consumo eléctrico de Quilicura que usan los DC",
-        "¿Qué fracción de la electricidad de Quilicura se la llevan los data centers?", o, sim,
+        "¿Qué parte de la electricidad de Quilicura usan los data centers (2025)?",
+        o, sim,
         "%", OBS["quilicura_share"]["src"], "calibración", _within(o, sim, 0.1),
         "El consumo comunal sin DC se calibró con este dato."))
     o = OBS["waitlist_2026"]["value"]
     sim = _band(S["waitlist_mw"], 2026)
     checks.append(_check(
         "waitlist", "Data centers esperando conexión a la red, 2026",
-        "¿Cuántos MW quedaron en lista de espera del CEN?", o, sim, "MW",
+        "¿Cuántos MW quedaron esperando conexión en el CEN en 2026?",
+        o, sim, "MW",
         OBS["waitlist_2026"]["src"], "calibración", _within(o, sim, 0.15),
         "La capacidad libre de cada nodo es un supuesto ajustado a este dato."))
     o = OBS["waitlist_2026"]["n"]
     sim = _band(S["waitlist_n"], 2026)
     checks.append(_check(
         "waitlist_n", "Número de proyectos en lista de espera, 2026",
-        "¿Cuántos proyectos esperaban?", o, sim, "proyectos", OBS["waitlist_2026"]["src"],
+        "¿Cuántos proyectos esperaban conexión en 2026?",
+        o, sim, "proyectos", OBS["waitlist_2026"]["src"],
         "calibración", abs(sim["p50"] - o) <= 1))
     o = OBS["litigations_2012_2026"]["value"]
     sim = _band(S["litigations"], 2026)
     checks.append(_check(
         "litigations", "Litigios ambientales contra data centers, 2012–2026",
-        "¿Cuántas veces los vecinos llevaron un DC a tribunales?", o, sim, "casos",
+        "¿Cuántas veces los vecinos llevaron un data center a tribunales (2012–2026)?",
+        o, sim, "casos",
         OBS["litigations_2012_2026"]["src"], "calibración", sim["p5"] <= o <= sim["p95"]))
     share = S["dc_share_national"]
     sim = {k: round(100 * share[k][_yi(2025)], 2) for k in ("p5", "p50", "p95")}
     checks.append(_check(
         "national_share", "Parte del consumo eléctrico nacional que usan los DC, 2025",
-        "¿Qué fracción de la electricidad de Chile usan los data centers?",
+        "¿Qué parte de la electricidad de Chile usaban los data centers en 2025?",
         {"low": 2, "high": 3}, sim, "%", "Ministerio de Energía: 2–3% del consumo nacional",
         "validación", 1.8 <= sim["p50"] <= 3.3))
     # Patrón de conflicto: ¿dónde surgió oposición organizada?

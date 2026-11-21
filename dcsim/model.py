@@ -147,7 +147,8 @@ class Run:
         for year in range(2027, C.YEAR_END + 1):
             for _ in range(rng_s.poisson(rate)):
                 month = (year - C.YEAR0) * 12 + int(rng_s.integers(12))
-                mw = float(np.clip(rng_s.lognormal(math.log(40), 0.8), 5, 300))
+                # tamaño típico 30 MW, rango 3–500 MW (informe, parte C)
+                mw = float(np.clip(rng_s.lognormal(math.log(30), 0.9), 3, 500))
                 u = rng_s.random()
                 cool = EVAP if u < 0.3 else (AIR if u < 0.8 else HYBRID)
                 synth.append((month, mw, cool))
@@ -489,7 +490,7 @@ class Run:
         c = self.commune[i]
         # Señal a la comunidad: sin participación crece la desconfianza
         salience = min(1.0, math.sqrt(self.it[i] / 50))
-        self.trust[c] += salience * {"pertinencia": 0.25, "SEIA": 0.05,
+        self.trust[c] += salience * {"pertinencia": 0.15, "SEIA": 0.03,
                                      "acumulativa": -0.1}.get(route, 0)
         fz = self._forced.get(i, {})
         litigate = False
@@ -667,7 +668,7 @@ class Run:
 
     def _zone_eval(self, t):
         """Evaluación conjunta: cuánta red y agua quedan en cada zona."""
-        v, pol = self.v, self.policy
+        pol = self.policy
         water_used = np.zeros(NA)
         for i in range(self.N):
             a = COMMUNE_AQ[self.commune[i]] if self.commune[i] >= 0 else -1
@@ -831,7 +832,7 @@ class Run:
             self._active = (self.opinion > POP["theta"]).astype(float)
             self.conflict = np.bincount(ca, weights=self._active * POP["w"],
                                         minlength=NC) / W_BY_COMMUNE
-            self.trust *= 0.99
+            self.trust = np.clip(self.trust * 0.99, -0.5, 1.2)
             # ---- registros de mitad y fin de año
             if m == 5:
                 self.rec["it_chile_jun"][yi] = float(self.it[op].sum())
@@ -948,7 +949,8 @@ class Run:
         r["conflict_rm"][yi] = float((self.conflict * HOUSEHOLDS)[COMMUNE_RM].sum()
                                      / HOUSEHOLDS[COMMUNE_RM].sum())
         active_sites = np.zeros(N_SITES, dtype=bool)
-        active_sites[self.site[(st == ST_OPER) | (st == ST_BUILD)]] = True
+        big = ((st == ST_OPER) | (st == ST_BUILD)) & (self.it >= 10)
+        active_sites[self.site[big]] = True
         near = POP["near500"][:, active_sites].any(axis=1)
         h500 = np.bincount(POP["commune"], weights=near * POP["w"], minlength=NC)
         r["c_h500"][:, yi] = h500

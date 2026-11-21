@@ -124,7 +124,7 @@ GRID_NODES: list[GridNode] = [
     GridNode("valparaiso", "Valparaíso", 150, (("2030-01", 100, "Refuerzo regional"),),
              "Supuesto."),
     GridNode("sur_sen", "Biobío y otras regiones", 200, (), "Supuesto."),
-    GridNode("antofagasta", "Antofagasta (norte grande)", 800, (),
+    GridNode("antofagasta", "Antofagasta (norte grande)", 2000, (),
              "Supuesto: vertimiento solar y holgura de generación en el norte (A3)."),
 ]
 NODE_IDX = {n.id: i for i, n in enumerate(GRID_NODES)}
