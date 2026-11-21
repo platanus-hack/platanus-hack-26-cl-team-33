@@ -1,6 +1,0 @@
-import type { MetricStats } from '../types/api';
-export const number = (value: number | null | undefined, suffix = '') => value == null || !Number.isFinite(value) ? 'Not available' : `${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}${suffix}`;
-export const time = (minute: number) => `D${Math.floor(minute / 1440)} ${String(Math.floor(minute / 60) % 24).padStart(2, '0')}:${String(Math.floor(minute % 60)).padStart(2, '0')}`;
-export const interval = (stat: MetricStats | null | undefined, unit = '') => stat ? `${number(stat.mean, unit)} (${number(stat.ci95_low)} to ${number(stat.ci95_high)}${unit})` : 'Not available';
-export function FixtureNotice() { return <div className="notice" role="note"><strong>Fixture preview — synthetic layout data.</strong> These fixed examples do not respond to configuration changes and are not computed experiment results.</div>; }
-export function Feedback({ loading, error }: { loading: boolean; error: string | null }) { return <><div role="status" aria-live="polite">{loading && <div className="notice">Running the experiment… Results will appear when the API completes.</div>}</div>{error && <div className="error" role="alert">{error}</div>}</>; }
