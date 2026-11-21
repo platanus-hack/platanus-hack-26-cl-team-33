@@ -611,7 +611,7 @@ class Run:
         c = self.commune[i]
         # Señal a la comunidad: sin participación crece la desconfianza
         salience = min(1.0, math.sqrt(self.it[i] / 50))
-        self.trust[c] += salience * {"pertinencia": 0.15, "SEIA": 0.03,
+        self.trust[c] += salience * {"pertinencia": self.v["trust_gain_pertinencia"], "SEIA": 0.03,
                                      "acumulativa": -self.v["trust_gain_cum"]}.get(route, 0)
         fz = self._forced.get(i, {})
         litigate = False
@@ -620,11 +620,12 @@ class Run:
             local = float((P["KLW"][:, self.site[i]] * self._active).sum()
                           / P["kl_den"][self.site[i]])
             # fundamentos legales: agua de un acuífero en zona de prohibición pesa más
-            water_ground = 1.5 * float(self.cool[i] != AIR and COMMUNE_AQ[c] >= 0)
+            water_ground = self.v["lit_w_water"] * float(self.cool[i] != AIR and COMMUNE_AQ[c] >= 0)
             grounds = 0.3 + 0.7 * max(water_ground, float(self.near_homes[i]),
                                       float(self.hv[i]))
             # convexo: los litigios se concentran donde la oposición local es intensa
-            p = self.v["p_lit_base"] + self.v["p_lit_conflict"] * local ** 2 * grounds
+            p = (self.v["p_lit_base"]
+                 + self.v["p_lit_conflict"] * local ** self.v["lit_convexity"] * grounds)
             if route == "acumulativa":
                 p *= self.v["lit_factor_cum"]
             u = self.u[i, 2] if self.n_lit[i] == 0 else (self.u[i, 2] + 0.618 * self.n_lit[i]) % 1
@@ -651,7 +652,7 @@ class Run:
         c = self.commune[i]
         if annul is None:
             water_flag = self.cool[i] != AIR and COMMUNE_AQ[c] >= 0
-            p = self.v["p_annul_base"] * (1 + 2.0 * water_flag)
+            p = self.v["p_annul_base"] * (1 + self.v["annul_w_water"] * water_flag)
             if self.route[i] == "acumulativa":
                 p *= self.v["annul_factor_cum"]
             annul = self.u[i, 4] < p
@@ -747,7 +748,7 @@ class Run:
                 if waited < 12:
                     continue
                 expansion_soon = any(t < pe <= t + 48 for pe in self.planned_exp[n])
-                h = 0.004 if expansion_soon else 0.015
+                h = self.v["reloc_hazard_exp"] if expansion_soon else self.v["reloc_hazard"]
                 if t >= C.POLICY_START:
                     h += 0.02 * self.policy.north_incentive
                 h *= 3  # se revisa cada 3 meses
@@ -949,19 +950,20 @@ class Run:
             share_c = mw_c * 730 / (mw_c * 730 + noncd_mwh / 12)
             sac_c = 0.4 * share_c
             ca = P["commune"]
-            zz = (-2.0 + 1.6 * P["sens"] * exposure + 1.2 * P["sens"] * water_c[ca]
-                  + 1.5 * sac_c[ca] - v["benefit_weight"] * P["val"] * benefit[ca]
+            zz = (v["op_intercept"] + v["op_w_nuisance"] * P["sens"] * exposure
+                  + v["op_w_water"] * P["sens"] * water_c[ca]
+                  + v["op_w_saturation"] * sac_c[ca] - v["benefit_weight"] * P["val"] * benefit[ca]
                   + self.trust[ca])
             target = 1 / (1 + np.exp(-zz))
             mean_c = np.bincount(ca, weights=self.opinion * P["w"], minlength=NC) / W_BY_COMMUNE
-            self.opinion += v["opinion_speed"] * (target - self.opinion) + 0.03 * (
+            self.opinion += v["opinion_speed"] * (target - self.opinion) + v["op_contagion"] * (
                 mean_c[ca] - self.opinion)
             self._active = (self.opinion > P["theta"]).astype(float)
             self.conflict = np.bincount(ca, weights=self._active * P["w"],
                                         minlength=NC) / W_BY_COMMUNE
             if t in frame_set:
                 self._record_frame(fac, wls, muni, jobs_b + jobs_o)
-            self.trust = np.clip(self.trust * 0.99, -0.5, 1.2)
+            self.trust = np.clip(self.trust * v["trust_decay"], -0.5, 1.2)
             # ---- registros de mitad y fin de año
             if m == 5:
                 self.rec["it_chile_jun"][yi] = float(self.it[op].sum())

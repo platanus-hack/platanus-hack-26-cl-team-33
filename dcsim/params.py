@@ -2,7 +2,9 @@
 
 ``Param.base`` es el valor central. Si ``sample`` es True, cada réplica Monte Carlo
 sortea el parámetro uniformemente en [low, high], así la incertidumbre de los datos
-se propaga a los resultados.
+se propaga a los resultados. Los demás quedan en su valor central en cada futuro, y
+``python -m dcsim.sensitivity`` los lleva a cada extremo de su rango (uno a la vez y todos
+juntos) para ver si los hallazgos se mantienen.
 """
 
 from __future__ import annotations
@@ -88,13 +90,34 @@ PARAMS: list[Param] = [
     Param("p_lit_conflict", "Aumento de la prob. de litigio por oposición local", 3.0, 2.0,
           4.0, "—", "Informe C: prob. de litigio 0,3 (0,1–0,6)", "calibrado", False,
           "permisos"),
+    Param("lit_w_water", "Peso del agua de un acuífero como fundamento de un juicio", 1.5, 0.5,
+          2.0, "—", "Supuesto del modelo, sin dato chileno. Con 1 pesa lo mismo que tener casas a "
+          "menos de 300 m o una línea de alta tensión. El rango se prueba en el análisis de "
+          "sensibilidad.", "supuesto", False, "permisos"),
+    Param("lit_convexity", "Exponente de la oposición local en la prob. de litigio", 2.0, 1.0,
+          3.0, "—", "Supuesto del modelo, sin dato chileno. Con 2 los juicios se concentran donde "
+          "la oposición es intensa; con 1 crecen en proporción a ella. El rango se prueba en el "
+          "análisis de sensibilidad.", "supuesto", False, "permisos"),
     Param("lit_months", "Mediana de duración de un litigio", 26, 18, 48, "meses",
           "Tribunal Ambiental: 2 a 4 años (informe A6)", "dato", False, "permisos"),
     Param("p_annul_base", "Prob. de que el tribunal anule el permiso", 0.25, 0.1, 0.4, "—",
           "Cerrillos ganó, Huechuraba perdió (informe A6)", "supuesto", False, "permisos"),
+    Param("annul_w_water", "Aumento de la prob. de anulación si el proyecto usa agua de un "
+          "acuífero", 2.0, 0.5, 3.0, "—", "Supuesto del modelo, sin dato chileno: la prob. se "
+          "multiplica por 1 + este valor (2: se triplica). Solo dos fallos: Cerrillos (agua) se "
+          "anuló y Huechuraba no. El rango se prueba en el análisis de sensibilidad.", "supuesto",
+          False, "permisos"),
     Param("p_pause", "Prob. de que la empresa espere el fallo antes de construir", 0.85, 0.6,
           0.95, "—", "Google no construyó Cerrillos durante el litigio", "supuesto", False,
           "permisos"),
+    Param("reloc_hazard", "Prob. mensual de mudarse de comuna mientras espera red, sin "
+          "ampliación de red a la vista", 0.015, 0.0075, 0.03, "1/mes", "Supuesto del modelo, "
+          "sin dato chileno. Corre desde el mes 12 de espera. El rango se prueba en el análisis "
+          "de sensibilidad.", "supuesto", False, "permisos"),
+    Param("reloc_hazard_exp", "Prob. mensual de mudarse de comuna mientras espera red, con una "
+          "ampliación planificada en los próximos 4 años", 0.004, 0.002, 0.008, "1/mes",
+          "Supuesto del modelo, sin dato chileno. El rango se prueba en el análisis de "
+          "sensibilidad.", "supuesto", False, "permisos"),
     # --- Efectos de las reglas (sin dato chileno: se sortean para que su incertidumbre se vea)
     Param("lit_factor_cum", "Litigios con evaluación conjunta (factor sobre la prob. individual)",
           0.35, 0.2, 0.5, "—", "Supuesto: la participación temprana reduce los litigios "
@@ -112,6 +135,31 @@ PARAMS: list[Param] = [
           "Supuesto (vacío A8: elasticidad de la oposición)", "supuesto", True, "opinión"),
     Param("benefit_weight", "Peso de los beneficios locales en la opinión", 1.0, 0.5, 1.5,
           "—", "Supuesto (vacío A8)", "supuesto", True, "opinión"),
+    Param("op_intercept", "Rechazo de partida de un hogar sin data centers cerca", -2.0, -2.5,
+          -1.5, "—", "Supuesto del modelo, sin dato chileno. En escala logística: −2 equivale a "
+          "12% de rechazo (−2,5: 8%; −1,5: 18%). El rango se prueba en el análisis de "
+          "sensibilidad.", "supuesto", False, "opinión"),
+    Param("op_w_nuisance", "Peso de las molestias cercanas (ruido, diésel, paisaje) en la "
+          "opinión", 1.6, 1.0, 2.2, "—", "Supuesto del modelo, sin dato chileno. El rango se "
+          "prueba en el análisis de sensibilidad.", "supuesto", False, "opinión"),
+    Param("op_w_water", "Peso del agua que los vecinos ven usar en la opinión", 1.2, 0.6, 1.8,
+          "—", "Supuesto del modelo, sin dato chileno. El rango se prueba en el análisis de "
+          "sensibilidad.", "supuesto", False, "opinión"),
+    Param("op_w_saturation", "Peso de la saturación (parte de la electricidad de la comuna que "
+          "usan los DC) en la opinión", 1.5, 0.75, 2.25, "—", "Supuesto del modelo, sin dato "
+          "chileno. El rango se prueba en el análisis de sensibilidad.", "supuesto", False,
+          "opinión"),
+    Param("op_contagion", "Contagio de la opinión entre vecinos de la misma comuna", 0.03, 0.0,
+          0.06, "1/mes", "Supuesto del modelo, sin dato chileno. Con 0 no hay contagio. El rango "
+          "se prueba en el análisis de sensibilidad.", "supuesto", False, "opinión"),
+    Param("trust_decay", "Fracción de la desconfianza que queda cada mes", 0.99, 0.98, 0.995,
+          "—", "Supuesto del modelo, sin dato chileno. Con 0,99 la desconfianza se reduce a la "
+          "mitad en ~6 años (0,98: ~3 años; 0,995: ~11 años). El rango se prueba en el análisis "
+          "de sensibilidad.", "supuesto", False, "opinión"),
+    Param("trust_gain_pertinencia", "Desconfianza que deja cada aprobación por pertinencia "
+          "(sin participación)", 0.15, 0.05, 0.25, "—", "Supuesto del modelo, sin dato chileno "
+          "(una aprobación por SEIA deja 0,03). El rango se prueba en el análisis de "
+          "sensibilidad.", "supuesto", False, "opinión"),
     Param("local_hire_share", "Fracción de empleos contratados en la comuna", 0.25, 0.1, 0.4,
           "—", "Supuesto: vecinos de Quilicura dicen no recibir empleo", "supuesto", False,
           "economía"),
