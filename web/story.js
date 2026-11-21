@@ -43,8 +43,10 @@ const METRICS = {
     hint: "Más oscuro: más MW de data centers.", good: null },
 };
 
+// customBase: seguir como hoy en los mismos futuros que tu regla; fuera de S.ens para no mover la escala
 const S = { story: null, meta: null, ens: {}, current: "status_quo", year: 2035, metric: "c_conflict",
-  view: "value", playing: null, customValues: null, customText: "", editing: false };
+  view: "value", playing: null, customValues: null, customText: "", editing: false, customBase: null };
+const FOOT = $("#simFoot").textContent;  // nota de las reglas fijas: 200 futuros por regla
 // al elegir una regla, el mapa muestra la capa donde esa regla más se nota
 const RULE_METRIC = { mesa: "c_it", aire: "c_water_ls", acumulativa: "c_conflict", norte: "c_it",
   paquete: "c_conflict", custom: "c_conflict" };
@@ -57,6 +59,7 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
     S.meta = meta;
     S.noteText = `Corre ${story.n_custom || 100} futuros; puede tardar hasta un minuto.`;
     $("#customNote").textContent = S.noteText;
+    document.querySelectorAll("[data-n-custom]").forEach((el) => { el.textContent = fmt(story.n_custom || 100); });
     renderNumbers(false);
     fillFindings();
     fillProof();
@@ -73,6 +76,25 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
 function loadEnsemble(id) {
   if (S.ens[id]) return Promise.resolve(S.ens[id]);
   return fetch(`/api/scenario/${id}`).then((r) => r.json()).then((d) => { S.ens[id] = d; return d; });
+}
+
+// tu regla corre menos futuros que las reglas fijas: se compara con seguir como hoy en esos mismos
+// futuros (mismas semillas), no con los 200. Se pide una sola vez.
+let customBaseReq = null;
+function loadCustomBase() {
+  if (!customBaseReq) {
+    customBaseReq = fetch("/api/baseline")
+      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then((d) => { S.customBase = d; return d; })
+      .catch((e) => { customBaseReq = null; throw e; });
+  }
+  return customBaseReq;
+}
+// con qué se compara la regla elegida en el mapa y en el detalle de cada comuna
+function baseEns() {
+  if (S.current !== "custom") return S.ens.status_quo;
+  const b = S.customBase;  // solo si son los mismos futuros que tu regla
+  return b && S.ens.custom && b.meta.n === S.ens.custom.meta.n ? b : null;
 }
 
 // ---------------------------------------------------------------- reglas
@@ -111,7 +133,7 @@ function select(id) {
   if (!S.story) return;
   renderNumbers(true);
   if (custom && !S.ens.custom) { $("#mapWhen").textContent = "Simula tu regla para verla en el mapa"; return; }
-  loadEnsemble(id).then(updateMap).catch(() => {});
+  Promise.all([loadEnsemble(id), custom ? loadCustomBase().catch(() => null) : null]).then(updateMap).catch(() => {});
 }
 
 function rangeFor(id, k) {  // [p5, p95] de una cifra en 2035
@@ -128,12 +150,13 @@ function valuesFor(id) {
 
 function renderNumbers(animate) {
   const id = S.current;
-  const base = valuesFor("status_quo");
+  const mine = id === "custom" ? S.ens.custom : null;  // tu regla trae seguir como hoy en sus mismos futuros
+  const base = mine ? mine.baseline.values : valuesFor("status_quo");
   let summary;
   if (id === "custom") {
     summary = S.customValues && !S.editing
       ? `<b>Tu regla:</b> ${esc(S.customText)}. <button type="button" class="inline-link" id="editRule">Cambiarla</button>`
-      : "Elige cada palanca y simula. El resultado se compara con seguir como hoy.";
+      : "Elige cada palanca y simula. El resultado se compara con seguir como hoy en los mismos futuros.";
   } else {
     const tab = S.story.tabs.find((t) => t.id === id);
     summary = esc(tab.summary);
@@ -144,6 +167,10 @@ function renderNumbers(animate) {
     }
   }
   $("#ruleSummary").innerHTML = summary;
+  const n = fmt(mine ? mine.baseline.n : S.story.n_custom || 100);
+  $("#simFoot").textContent = id === "custom"
+    ? `Cifras para 2035: valor típico de ${n} futuros simulados con tu regla, comparados con seguir como hoy en esos mismos ${n} futuros. La historia hasta noviembre de 2026 es la real.`
+    : FOOT;
   const edit = $("#editRule");
   if (edit) edit.addEventListener("click", () => { S.editing = true; select("custom"); });
   const vals = valuesFor(id);
@@ -155,18 +182,27 @@ function renderNumbers(animate) {
     val.textContent = spec.show(vals[k]);
     if (animate && !reduced) { val.classList.remove("tick"); void val.offsetWidth; val.classList.add("tick"); }
     if (spec.note) band.querySelector(".note").textContent = spec.note(vals, rangeFor(id, k));
-    band.querySelector(".delta").innerHTML = id === "status_quo" ? "" : delta(spec, vals[k], base[k]);
+    band.querySelector(".delta").innerHTML = id === "status_quo" ? "" : delta(spec, vals[k], base[k], mine && mine.compare[k]);
   });
 }
 
-function delta(spec, v, b) {
+function delta(spec, v, b, c) {  // c: conteo futuro a futuro, solo para tu regla
   const up = v > b;
   const rel = b ? Math.abs(v - b) / Math.abs(b) : 0;
   const diff = Math.abs(v - b) * (spec.scale || 1);
   if ((spec.points && diff < 0.1) || (!spec.points && rel < 0.02)) return "igual que seguir como hoy";
   const amount = spec.points ? `${fmt(diff, diff < 10 ? 1 : 0)} puntos` : `${fmt(rel * 100)}%`;
   const verdict = spec.goodUp === null ? "" : (up === spec.goodUp ? "<b>mejor</b> · " : "<b>peor</b> · ");
-  return `${verdict}${amount} ${up ? "más" : "menos"} que seguir como hoy`;
+  return `${verdict}${amount} ${up ? "más" : "menos"} que seguir como hoy${c ? ` · ${inFutures(c, up, spec.goodUp)}` : ""}`;
+}
+
+// en cuántos de los mismos futuros tu regla mueve la cifra hacia ese lado, y qué pasa en el resto
+function inFutures(c, up, goodUp) {
+  const [rise, fall] = goodUp === null ? [c.more, c.less] : goodUp ? [c.better, c.worse] : [c.worse, c.better];
+  const [agree, against] = up ? [rise, fall] : [fall, rise];
+  if (agree === c.n) return `en los ${fmt(c.n)} futuros`;
+  const other = goodUp === null ? (up ? "menos" : "más") : (up === goodUp ? "peor" : "mejor");
+  return `en ${fmt(agree)} de ${fmt(c.n)} futuros; ${against ? `${other} en ${fmt(against)}` : "igual en el resto"}`;
 }
 
 // ---------------------------------------------------------------- tu regla
@@ -187,11 +223,14 @@ $("#custom").addEventListener("submit", async (e) => {
   const btn = $("#runCustom");
   btn.disabled = true;
   $("#customNote").textContent = `Simulando ${S.story.n_custom || 100} futuros…`;
+  loadCustomBase().catch(() => {});  // para el mapa, mientras se simula
   try {
-    const res = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ policy: pol }) }).then((r) => r.json());
-    S.ens.custom = res;
+    const r = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ policy: pol }) });
+    if (!r.ok) throw new Error(r.statusText);
+    const res = await r.json();
     S.customValues = Object.fromEntries(KEYS.map((k) => [k, res.series[k].p50[yi(2035)]]));
+    S.ens.custom = res;
     S.customText = describe(pol);
     S.editing = false;
     $("#customNote").textContent = S.noteText;
@@ -322,7 +361,7 @@ function diverge(t) {  // divergente: gris = igual que como hoy; los extremos se
   return t < 0 ? mix(MID, lo, a) : mix(MID, hi, a);
 }
 function diffMax(m) {  // escala del modo cambio: el mayor cambio de la regla elegida (todas las comunas y años)
-  const base = S.ens.status_quo;
+  const base = baseEns();
   const res = S.ens[S.current];
   let max = 0;
   if (!base || !res) return 1;
@@ -368,10 +407,12 @@ function updateMap() {
   $("#yearLabel").textContent = y;
   if (!res) { $("#mapWhen").textContent = S.current === "custom" ? "Simula tu regla para verla en el mapa" : "Cargando el mapa…"; return; }
   const name = S.current === "custom" ? "tu regla" : S.story.tabs.find((t) => t.id === S.current).name;
-  const base = S.ens.status_quo;
+  const base = baseEns();
   const diff = S.view === "diff" && S.current !== "status_quo" && base;
+  const vs = S.current === "custom" ? `Tu regla comparada con seguir como hoy en los mismos ${fmt(res.meta.n)} futuros`
+    : `${name} comparado con seguir como hoy`;
   const when = y < 2026 ? "Historia real, igual en todas las reglas" : y === 2026 ? "2026: real hasta noviembre"
-    : diff ? `${name} comparado con seguir como hoy` : `Futuro simulado · ${name}`;
+    : diff ? vs : `Futuro simulado · ${name}`;
   $("#mapWhen").textContent = diff && y <= 2026 ? `${when}: todavía no hay diferencia` : when;
   const m = METRICS[S.metric];
   const max = diff ? diffMax(S.metric) : metricMax(S.metric);
@@ -448,7 +489,7 @@ function showCommune(i) {
   const res = S.ens[S.current];
   const c = S.meta.communes[i];
   const y = S.year;
-  const base = S.ens.status_quo;
+  const base = baseEns();
   const cmp = S.current !== "status_quo" && base;
   const g = (k, sc = 1, r = res) => r.communes[k].p50[i][yi(y)] * sc;
   const row = (label, k, sc, unit, d = 0) => `<dt>${label}</dt><dd>${fmt(g(k, sc), d)} ${unit}${
