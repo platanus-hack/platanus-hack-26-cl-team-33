@@ -115,7 +115,7 @@
             <div class="band" data-k="invest_lost"><div><b>Inversión perdida</b><span class="note">proyectos que no encuentran red y se van de Chile</span></div><span class="val">…</span><span class="delta"></span></div>
             <div class="band" data-k="bill_pct"><div><b>Alza de la cuenta de la luz</b><span class="note" data-bill-note>respecto de 2025; hipótesis con rango amplio</span></div><span class="val">…</span><span class="delta"></span></div>
           </div>
-          <p class="sim-foot">Cifras para 2035: valor típico de 200 futuros simulados por regla. La historia hasta noviembre de 2026 es la real.</p>
+          <p class="sim-foot" id="simFoot">Cifras para 2035: valor típico de 200 futuros simulados por regla. La historia hasta noviembre de 2026 es la real.</p>
         </div>
       </div>
     </section>
@@ -279,7 +279,7 @@
             <li><b>Operación.</b> Usa electricidad y agua, prueba sus generadores diésel y paga patentes.</li>
           </ol>
           <p><b>El bucle que una planilla no ve.</b> Los hogares cercanos sienten ruido, diésel, miedo por el agua y la acumulación de proyectos, y reciben empleo, patentes y fondos. Su oposición se contagia en la comuna, puede llevar un proyecto a tribunales y atrasarlo o anularlo, y cambia dónde eligen instalarse los siguientes.</p>
-          <p>Cada regla se simula 200 veces. Los supuestos más inciertos (marcados en «Supuestos») se sortean en cada futuro y el resto queda en su valor central. Todas las reglas usan los mismos números aleatorios, así la diferencia entre reglas es efecto de la regla y no del azar. Se reporta el valor típico (mediana) y el rango donde cae el 90% de los futuros.</p>
+          <p>Cada regla se simula 200 veces. Tu regla, <span data-n-custom>100</span> veces, para que responda en menos de un minuto. Los supuestos más inciertos (marcados en «Supuestos») se sortean en cada futuro y el resto queda en su valor central. Todas las reglas usan los mismos números aleatorios, así la diferencia entre reglas es efecto de la regla y no del azar. Por eso tu regla se compara con seguir como hoy en esos mismos <span data-n-custom>100</span> futuros. Se reporta el valor típico (mediana) y el rango donde cae el 90% de los futuros.</p>
         </div>
       </details>
       <details id="matematica" data-rise>
@@ -289,7 +289,7 @@
       <details id="vacios" data-rise>
         <summary>Lo que no sabemos</summary>
         <div class="detail-body prose">
-          <p>Estos vacíos de información se tratan como supuestos con rango. Los que más pesan en las reglas (opinión, beneficios, efecto de la evaluación conjunta y de la transparencia, tarifa) se sortean en cada uno de los 200 futuros; el resto queda fijo en su valor central.</p>
+          <p>Estos vacíos de información se tratan como supuestos con rango. Los que más pesan en las reglas (opinión, beneficios, efecto de la evaluación conjunta y de la transparencia, tarifa) se sortean en cada futuro simulado; el resto queda fijo en su valor central.</p>
           <ul>
             <li>Consumo real de agua y electricidad por data center: solo hay datos de Google Quilicura y del CEN.</li>
             <li>Recarga del acuífero y conexión acuífero–humedal en Quilicura: el nivel del acuífero es un índice, no una predicción en metros.</li>
