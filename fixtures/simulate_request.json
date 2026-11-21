@@ -1,0 +1,19 @@
+{
+  "scenario_id": "baseline",
+  "seed": 42,
+  "config": {
+    "arrival_rate_per_hour": 3.0,
+    "physicians": 4,
+    "ed_spaces": 8,
+    "ward_beds": 24,
+    "initial_ward_occupied": 21,
+    "admission_probability": 0.2,
+    "mean_physician_service_min": 35.0,
+    "mean_inpatient_los_h": 36.0,
+    "bed_turnover_min": 120.0,
+    "warmup_h": 72,
+    "measurement_h": 168,
+    "followup_h": 12,
+    "snapshot_every_min": 15
+  }
+}
