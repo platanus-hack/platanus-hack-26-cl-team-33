@@ -43,6 +43,8 @@ async function init() {
   initMap();
   api("/api/validation").then((v) => { S.validation = v; renderValidation(); }).catch(showErr("#validation"));
   await selectScenario("status_quo", false);
+  // Precarga las demás reglas (cacheadas en el servidor) para fijar la escala de colores del mapa
+  Promise.all(S.meta.scenarios.map((sc) => loadScenario(sc.id).catch(() => null))).then(() => updateMap());
   api("/api/insights").then((v) => { S.insights = v; renderHypotheses(); }).catch(showErr("#hyps"));
 }
 function showErr(sel) {
@@ -535,8 +537,11 @@ function updateMap() {
     : `Futuro simulado con <b>${esc(scenName(S.selected))}</b>.`;
   const m = METRIC_INFO[S.mapMetric];
   const cm = r.communes[S.mapMetric].p50;
+  // Una sola escala para todas las reglas cargadas: el mismo color = el mismo valor al cambiar de regla
   let max = 0;
-  cm.forEach((row) => row.forEach((v) => { max = Math.max(max, v); }));
+  Object.values(S.results).forEach((res) => {
+    res.communes[S.mapMetric].p50.forEach((row) => row.forEach((v) => { max = Math.max(max, v); }));
+  });
   max = max * m.scale || 1;
   communeLayer.clearLayers();
   S.meta.communes.forEach((c, i) => {
