@@ -1,0 +1,118 @@
+[
+ {
+  "id": "paquete",
+  "kicker": "No hay que elegir",
+  "headline": "3 reglas mejoran las 6 métricas a la vez en 92% de los futuros",
+  "body": "Enfriamiento por aire + fondo comunitario + incentivo al norte: 17% más data centers operando, 14% más inversión, 32% menos inversión perdida, 53% menos hogares movilizados, 33% menos juicios y 56% menos agua (2035).",
+  "cost": "El costo: la cuenta de la luz sube 3,7% en vez de 3,1%, porque hay más data centers consumiendo.",
+  "stat": "92%",
+  "stat_label": "de los futuros mejora en todo",
+  "action": {
+   "type": "custom",
+   "policy": {
+    "air_cooling_rm": true,
+    "community_fund_usd_mw": 20000,
+    "north_incentive": 0.6
+   }
+  },
+  "action_label": "Simular este paquete",
+  "n_sims": 15080
+ },
+ {
+  "id": "permisos",
+  "kicker": "El cuello de botella no es el permiso",
+  "headline": "Permisos 4 veces más rápidos: solo 2% más data centers en Santiago al 2030",
+  "body": "Con permisos 75% más cortos, la RM pasa de 793 a 808 MW en 2030, y el plazo medio entre anuncio y operación baja apenas 3,7 meses. Los proyectos aprobados igual esperan conexión eléctrica.",
+  "cost": "Relevante para la Mesa Permanente (nov-2026), cuyo objetivo es acortar permisos.",
+  "stat": "+2%",
+  "stat_label": "MW en la RM con permisos 4× más rápidos",
+  "action": {
+   "type": "scenario",
+   "id": "mesa"
+  },
+  "action_label": "Ver “Permisos rápidos”",
+  "n_sims": 15080
+ },
+ {
+  "id": "boom",
+  "kicker": "Punto de quiebre",
+  "headline": "Si llegan el doble de proyectos, se conecta solo 19% más, pero los juicios se multiplican por 2,6",
+  "body": "Con 10 proyectos nuevos al año en vez de 5, la lista de espera crece 2,8 veces y los hogares movilizados pasan de 18% a 35%. Con 4 veces más proyectos: 31% más MW y 8 veces más juicios. Los proyectos que esperan red generan rechazo sin dejar beneficios.",
+  "cost": "La red no crece al ritmo de los anuncios: cada proyecto extra suma espera, no MW.",
+  "stat": "×2,6",
+  "stat_label": "juicios con el doble de proyectos",
+  "action": {
+   "type": "custom",
+   "policy": {
+    "demand": "alta"
+   }
+  },
+  "action_label": "Simular el boom de IA",
+  "n_sims": 15080
+ },
+ {
+  "id": "cerrillos",
+  "kicker": "Historia alternativa",
+  "headline": "Si Google hubiera enfriado Cerrillos con aire en 2019, estaría operando desde 2022 en 92% de los futuros",
+  "body": "El modelo vuelve a correr 2012–2026 cambiando solo esa decisión. Con agua (169 L/s de un acuífero en zona de prohibición) la probabilidad de juicio es 79%; con aire, 3%. En la realidad hubo juicio, el tribunal anuló el permiso en 2024 y Google rediseñó con aire en 2026.",
+  "cost": "La elección de enfriamiento pesa más que el tamaño del proyecto.",
+  "stat": "79% → 3%",
+  "stat_label": "probabilidad de juicio: agua → aire",
+  "action": {
+   "type": "project",
+   "id": "google_cerrillos",
+   "year": 2024
+  },
+  "action_label": "Ver Cerrillos en el mapa",
+  "n_sims": 15080
+ },
+ {
+  "id": "lampa",
+  "kicker": "Dónde importa más que cuánto",
+  "headline": "Alejar un solo proyecto de las casas baja 56% el conflicto de toda Lampa",
+  "body": "Campo de Datos Lampa (100 MW) está a menos de 50 m de Valle Grande. El mismo proyecto en la periferia de la comuna reduce los hogares movilizados de 25% a 11% y los hogares a menos de 500 m de un DC grande de 3.968 a 1.701 (2035). Se cumple en 92% de los futuros.",
+  "cost": "El informe registra proyectos a menos de 50 m (Lampa) y a ~250 m (Puente Alto) de viviendas.",
+  "stat": "−56%",
+  "stat_label": "conflicto en Lampa",
+  "action": {
+   "type": "project",
+   "id": "campo_lampa",
+   "year": 2030
+  },
+  "action_label": "Ver Campo de Datos Lampa",
+  "n_sims": 15080
+ },
+ {
+  "id": "transparencia",
+  "kicker": "Información vs plata",
+  "headline": "Publicar el uso real de agua baja el conflicto tanto como pagar US$38 millones al año",
+  "body": "Transparentar el consumo: -29% hogares movilizados. Un fondo comunitario de US$20.000 por MW al año (≈ US$38 millones en 2035): -29%. Google Quilicura usa solo el 29% de su derecho de agua, pero los vecinos temen el 100%.",
+  "cost": "Depende de cuánto cambia la percepción con información: es un supuesto con rango.",
+  "stat": "US$38 M",
+  "stat_label": "al año, lo que 'vale' la transparencia",
+  "action": {
+   "type": "custom",
+   "policy": {
+    "transparency": true
+   }
+  },
+  "action_label": "Simular solo transparencia",
+  "n_sims": 15080
+ },
+ {
+  "id": "trayectoria",
+  "kicker": "No hay destino escrito",
+  "headline": "12 comunas distintas pueden terminar como la más afectada en 2035",
+  "body": "En 200 futuros con las mismas reglas, la comuna con más hogares movilizados cambia según el orden en que llegan los proyectos: Cerrillos (20%), Padre Hurtado (20%), Quilicura (18%), Tiltil (18%). La 'comuna de sacrificio' se decide en el camino, no en el mapa.",
+  "cost": "Por eso una evaluación proyecto por proyecto no puede anticiparla.",
+  "stat": "12",
+  "stat_label": "comunas posibles de sacrificio",
+  "action": {
+   "type": "scenario",
+   "id": "status_quo",
+   "metric": "c_conflict"
+  },
+  "action_label": "Ver el conflicto en el mapa",
+  "n_sims": 15080
+ }
+]
