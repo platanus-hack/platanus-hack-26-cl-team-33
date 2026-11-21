@@ -1,0 +1,3374 @@
+{
+ "model": "c71af498a0",
+ "n_oat": 100,
+ "n_joint": 400,
+ "n_sims": 76500,
+ "seconds": 933.2,
+ "hindcast_rule": "Un ajuste es coherente con la historia si, al correr 2012–2026 sin anclar (el modelo genera la historia solo), la mediana de los juicios a fines de 2026 queda entre 1 y 4 (hubo 2) y las medianas del consumo de los data centers de la RM a fines de 2025 (dato: 260 MW), de los MW esperando red en 2026 (1.420 MW) y de la capacidad instalada en Santiago a mediados de 2026 (311 MW) quedan a menos de 25% del dato.",
+ "factors": [
+  {
+   "key": "pue_hybrid",
+   "label": "PUE con enfriamiento híbrido",
+   "unit": "—",
+   "base": 1.25,
+   "low": 1.15,
+   "high": 1.35,
+   "kind": "supuesto",
+   "group": "energía",
+   "src": "Supuesto entre aire y evaporativo"
+  },
+  {
+   "key": "peak_pue_ratio",
+   "label": "PUE de verano / PUE medio",
+   "unit": "—",
+   "base": 1.12,
+   "low": 1.08,
+   "high": 1.18,
+   "kind": "supuesto",
+   "group": "energía",
+   "src": "arXiv 2606.21760: evaporación reduce 25–35% la potencia pico de frío"
+  },
+  {
+   "key": "noncd_mwh_per_person",
+   "label": "Consumo eléctrico comunal no-DC",
+   "unit": "MWh/persona/año",
+   "base": 2.4,
+   "low": 2.0,
+   "high": 3.0,
+   "kind": "calibrado",
+   "group": "energía",
+   "src": "Calibrado para que los DC sean ~62% del consumo de Quilicura"
+  },
+  {
+   "key": "system_twh_2025",
+   "label": "Consumo eléctrico nacional 2025",
+   "unit": "TWh",
+   "base": 84,
+   "low": 80,
+   "high": 88,
+   "kind": "supuesto",
+   "group": "energía",
+   "src": "Supuesto (orden de magnitud SEN)"
+  },
+  {
+   "key": "system_growth",
+   "label": "Crecimiento anual de la demanda nacional",
+   "unit": "1/año",
+   "base": 0.025,
+   "low": 0.015,
+   "high": 0.035,
+   "kind": "supuesto",
+   "group": "energía",
+   "src": "Supuesto"
+  },
+  {
+   "key": "grid_cost_musd_per_mw",
+   "label": "Costo de red atribuible a cada MW de DC",
+   "unit": "MUS$/MW",
+   "base": 0.25,
+   "low": 0.1,
+   "high": 0.4,
+   "kind": "supuesto",
+   "group": "energía",
+   "src": "Supuesto"
+  },
+  {
+   "key": "wue_air",
+   "label": "WUE por aire",
+   "unit": "L/kWh",
+   "base": 0.02,
+   "low": 0.0,
+   "high": 0.1,
+   "kind": "dato",
+   "group": "agua",
+   "src": "LBNL, Microsoft (informe C)"
+  },
+  {
+   "key": "wue_hybrid",
+   "label": "WUE híbrido",
+   "unit": "L/kWh",
+   "base": 0.7,
+   "low": 0.5,
+   "high": 1.0,
+   "kind": "dato",
+   "group": "agua",
+   "src": "NREL (1,27 → 0,70)"
+  },
+  {
+   "key": "wue_summer_factor",
+   "label": "WUE en verano / WUE medio",
+   "unit": "—",
+   "base": 1.45,
+   "low": 1.3,
+   "high": 1.7,
+   "kind": "supuesto",
+   "group": "agua",
+   "src": "arXiv 2606.21760: el agua se concentra en días calurosos"
+  },
+  {
+   "key": "liters_household_day",
+   "label": "Consumo de agua por hogar",
+   "unit": "L/día",
+   "base": 500,
+   "low": 400,
+   "high": 600,
+   "kind": "dato",
+   "group": "agua",
+   "src": "Equivalencias de prensa (informe C)"
+  },
+  {
+   "key": "recharge_cut",
+   "label": "Reducción de recarga por cambio climático a 2035",
+   "unit": "—",
+   "base": 0.2,
+   "low": 0.1,
+   "high": 0.4,
+   "kind": "supuesto",
+   "group": "agua",
+   "src": "Escenarios −10% a −40% (informe C)"
+  },
+  {
+   "key": "seia_months",
+   "label": "Mediana de tramitación SEIA + permisos",
+   "unit": "meses",
+   "base": 16,
+   "low": 10,
+   "high": 30,
+   "kind": "calibrado",
+   "group": "permisos",
+   "src": "Informe C: plazo 36 meses (6–48) incluyendo esperas"
+  },
+  {
+   "key": "pert_months",
+   "label": "Mediana de pertinencia + permisos sectoriales",
+   "unit": "meses",
+   "base": 9,
+   "low": 4,
+   "high": 14,
+   "kind": "calibrado",
+   "group": "permisos",
+   "src": "Cerrillos 2026: 3 meses de pertinencia"
+  },
+  {
+   "key": "build_months",
+   "label": "Mediana de construcción",
+   "unit": "meses",
+   "base": 20,
+   "low": 14,
+   "high": 30,
+   "kind": "calibrado",
+   "group": "permisos",
+   "src": "Supuesto (Google Quilicura: anuncio 2012 → 2015)"
+  },
+  {
+   "key": "fuel_t_per_mw",
+   "label": "Combustible diseñado por MW",
+   "unit": "t/MW",
+   "base": 7.0,
+   "low": 5.0,
+   "high": 10.0,
+   "kind": "dato",
+   "group": "permisos",
+   "src": "Lampa 511 t/100 MW; Cerrillos 696 t/~120 MW"
+  },
+  {
+   "key": "fuel_min_t_per_mw",
+   "label": "Combustible mínimo viable por MW",
+   "unit": "t/MW",
+   "base": 4.5,
+   "low": 4.0,
+   "high": 5.0,
+   "kind": "supuesto",
+   "group": "permisos",
+   "src": "Supuesto: autonomía mínima del respaldo"
+  },
+  {
+   "key": "p_bunch",
+   "label": "Prob. de ajustar el combustible bajo el umbral",
+   "unit": "—",
+   "base": 0.85,
+   "low": 0.6,
+   "high": 1.0,
+   "kind": "supuesto",
+   "group": "permisos",
+   "src": "Informe S7: 7 pertinencias entre 511 y 990 t"
+  },
+  {
+   "key": "p_lit_base",
+   "label": "Prob. base de litigio por proyecto aprobado",
+   "unit": "—",
+   "base": 0.02,
+   "low": 0.01,
+   "high": 0.05,
+   "kind": "calibrado",
+   "group": "permisos",
+   "src": "Calibrado: 2 litigios 2012–2026 (Cerrillos, Huechuraba)"
+  },
+  {
+   "key": "p_lit_conflict",
+   "label": "Aumento de la prob. de litigio por oposición local",
+   "unit": "—",
+   "base": 3.0,
+   "low": 2.0,
+   "high": 4.0,
+   "kind": "calibrado",
+   "group": "permisos",
+   "src": "Informe C: prob. de litigio 0,3 (0,1–0,6)"
+  },
+  {
+   "key": "lit_w_water",
+   "label": "Peso del agua de un acuífero como fundamento de un juicio",
+   "unit": "—",
+   "base": 1.5,
+   "low": 0.5,
+   "high": 2.0,
+   "kind": "supuesto",
+   "group": "permisos",
+   "src": "Supuesto del modelo, sin dato chileno. Con 1 pesa lo mismo que tener casas a menos de 300 m o una línea de alta tensión. El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "lit_convexity",
+   "label": "Exponente de la oposición local en la prob. de litigio",
+   "unit": "—",
+   "base": 2.0,
+   "low": 1.0,
+   "high": 3.0,
+   "kind": "supuesto",
+   "group": "permisos",
+   "src": "Supuesto del modelo, sin dato chileno. Con 2 los juicios se concentran donde la oposición es intensa; con 1 crecen en proporción a ella. El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "lit_months",
+   "label": "Mediana de duración de un litigio",
+   "unit": "meses",
+   "base": 26,
+   "low": 18,
+   "high": 48,
+   "kind": "dato",
+   "group": "permisos",
+   "src": "Tribunal Ambiental: 2 a 4 años (informe A6)"
+  },
+  {
+   "key": "p_annul_base",
+   "label": "Prob. de que el tribunal anule el permiso",
+   "unit": "—",
+   "base": 0.25,
+   "low": 0.1,
+   "high": 0.4,
+   "kind": "supuesto",
+   "group": "permisos",
+   "src": "Cerrillos ganó, Huechuraba perdió (informe A6)"
+  },
+  {
+   "key": "annul_w_water",
+   "label": "Aumento de la prob. de anulación si el proyecto usa agua de un acuífero",
+   "unit": "—",
+   "base": 2.0,
+   "low": 0.5,
+   "high": 3.0,
+   "kind": "supuesto",
+   "group": "permisos",
+   "src": "Supuesto del modelo, sin dato chileno: la prob. se multiplica por 1 + este valor (2: se triplica). Solo dos fallos: Cerrillos (agua) se anuló y Huechuraba no. El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "p_pause",
+   "label": "Prob. de que la empresa espere el fallo antes de construir",
+   "unit": "—",
+   "base": 0.85,
+   "low": 0.6,
+   "high": 0.95,
+   "kind": "supuesto",
+   "group": "permisos",
+   "src": "Google no construyó Cerrillos durante el litigio"
+  },
+  {
+   "key": "reloc_hazard",
+   "label": "Prob. mensual de mudarse de comuna mientras espera red, sin ampliación de red a la vista",
+   "unit": "1/mes",
+   "base": 0.015,
+   "low": 0.0075,
+   "high": 0.03,
+   "kind": "supuesto",
+   "group": "permisos",
+   "src": "Supuesto del modelo, sin dato chileno. Corre desde el mes 12 de espera. El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "reloc_hazard_exp",
+   "label": "Prob. mensual de mudarse de comuna mientras espera red, con una ampliación planificada en los próximos 4 años",
+   "unit": "1/mes",
+   "base": 0.004,
+   "low": 0.002,
+   "high": 0.008,
+   "kind": "supuesto",
+   "group": "permisos",
+   "src": "Supuesto del modelo, sin dato chileno. El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "op_intercept",
+   "label": "Rechazo de partida de un hogar sin data centers cerca",
+   "unit": "—",
+   "base": -2.0,
+   "low": -2.5,
+   "high": -1.5,
+   "kind": "supuesto",
+   "group": "opinión",
+   "src": "Supuesto del modelo, sin dato chileno. En escala logística: −2 equivale a 12% de rechazo (−2,5: 8%; −1,5: 18%). El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "op_w_nuisance",
+   "label": "Peso de las molestias cercanas (ruido, diésel, paisaje) en la opinión",
+   "unit": "—",
+   "base": 1.6,
+   "low": 1.0,
+   "high": 2.2,
+   "kind": "supuesto",
+   "group": "opinión",
+   "src": "Supuesto del modelo, sin dato chileno. El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "op_w_water",
+   "label": "Peso del agua que los vecinos ven usar en la opinión",
+   "unit": "—",
+   "base": 1.2,
+   "low": 0.6,
+   "high": 1.8,
+   "kind": "supuesto",
+   "group": "opinión",
+   "src": "Supuesto del modelo, sin dato chileno. El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "op_w_saturation",
+   "label": "Peso de la saturación (parte de la electricidad de la comuna que usan los DC) en la opinión",
+   "unit": "—",
+   "base": 1.5,
+   "low": 0.75,
+   "high": 2.25,
+   "kind": "supuesto",
+   "group": "opinión",
+   "src": "Supuesto del modelo, sin dato chileno. El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "op_contagion",
+   "label": "Contagio de la opinión entre vecinos de la misma comuna",
+   "unit": "1/mes",
+   "base": 0.03,
+   "low": 0.0,
+   "high": 0.06,
+   "kind": "supuesto",
+   "group": "opinión",
+   "src": "Supuesto del modelo, sin dato chileno. Con 0 no hay contagio. El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "trust_decay",
+   "label": "Fracción de la desconfianza que queda cada mes",
+   "unit": "—",
+   "base": 0.99,
+   "low": 0.98,
+   "high": 0.995,
+   "kind": "supuesto",
+   "group": "opinión",
+   "src": "Supuesto del modelo, sin dato chileno. Con 0,99 la desconfianza se reduce a la mitad en ~6 años (0,98: ~3 años; 0,995: ~11 años). El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "trust_gain_pertinencia",
+   "label": "Desconfianza que deja cada aprobación por pertinencia (sin participación)",
+   "unit": "—",
+   "base": 0.15,
+   "low": 0.05,
+   "high": 0.25,
+   "kind": "supuesto",
+   "group": "opinión",
+   "src": "Supuesto del modelo, sin dato chileno (una aprobación por SEIA deja 0,03). El rango se prueba en el análisis de sensibilidad."
+  },
+  {
+   "key": "local_hire_share",
+   "label": "Fracción de empleos contratados en la comuna",
+   "unit": "—",
+   "base": 0.25,
+   "low": 0.1,
+   "high": 0.4,
+   "kind": "supuesto",
+   "group": "economía",
+   "src": "Supuesto: vecinos de Quilicura dicen no recibir empleo"
+  },
+  {
+   "key": "capex_musd_per_mw",
+   "label": "Inversión por MW (si no se informa)",
+   "unit": "MUS$/MW",
+   "base": 7.0,
+   "low": 5.0,
+   "high": 9.0,
+   "kind": "dato",
+   "group": "economía",
+   "src": "Lampa: US$850 M / 100 MW"
+  },
+  {
+   "key": "jobs_build_per_musd",
+   "label": "Empleos de construcción por MUS$",
+   "unit": "empleos/MUS$",
+   "base": 3.0,
+   "low": 1.3,
+   "high": 7.0,
+   "kind": "dato",
+   "group": "economía",
+   "src": "Google 2012: 200/US$150 M; 2018: 1.000/US$140 M"
+  },
+  {
+   "key": "nox_g_per_kwh",
+   "label": "NOx de generadores diésel",
+   "unit": "g/kWh",
+   "base": 9.0,
+   "low": 6.0,
+   "high": 14.0,
+   "kind": "dato",
+   "group": "aire",
+   "src": "EPA AP-42 / Tier 2 (extranjero)"
+  },
+  {
+   "key": "test_hours_year",
+   "label": "Horas de prueba anuales del respaldo diésel",
+   "unit": "h/año",
+   "base": 12,
+   "low": 6,
+   "high": 24,
+   "kind": "supuesto",
+   "group": "aire",
+   "src": "Pruebas mensuales (informe A4); vacío A8"
+  },
+  {
+   "key": "outages_per_year",
+   "label": "Apagones de red que activan el diésel",
+   "unit": "eventos/año",
+   "base": 0.4,
+   "low": 0.1,
+   "high": 1.0,
+   "kind": "supuesto",
+   "group": "aire",
+   "src": "Supuesto (apagones 2024–2025 en la RM)"
+  }
+ ],
+ "findings": [
+  {
+   "id": "paquete",
+   "kicker": "No hay que elegir",
+   "claim": "Enfriamiento por aire, fondo comunitario e incentivo al norte mejoran a la vez MW operando, inversión, inversión perdida, conflicto, juicios y agua (2035).",
+   "criterion": "Se mantiene si el paquete es igual o mejor en las seis cifras en al menos la mitad de los futuros.",
+   "metric": "Futuros en que el paquete es igual o mejor en las seis cifras",
+   "fmt": "pct",
+   "base": 0.84,
+   "headline": "84% de los futuros mejora en todo salvo la cuenta de la luz",
+   "oat": [
+    {
+     "key": "pue_hybrid",
+     "low": 0.84,
+     "high": 0.81,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "peak_pue_ratio",
+     "low": 0.82,
+     "high": 0.8,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "noncd_mwh_per_person",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_twh_2025",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_growth",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "grid_cost_musd_per_mw",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_air",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_hybrid",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_summer_factor",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "liters_household_day",
+     "low": 0.82,
+     "high": 0.82,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "recharge_cut",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "seia_months",
+     "low": 0.84,
+     "high": 0.83,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "pert_months",
+     "low": 0.73,
+     "high": 0.85,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "build_months",
+     "low": 0.84,
+     "high": 0.8,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_t_per_mw",
+     "low": 0.83,
+     "high": 0.82,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_min_t_per_mw",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_bunch",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_base",
+     "low": 0.83,
+     "high": 0.85,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_conflict",
+     "low": 0.84,
+     "high": 0.81,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_w_water",
+     "low": 0.78,
+     "high": 0.86,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_convexity",
+     "low": 0.8,
+     "high": 0.85,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_months",
+     "low": 0.86,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_annul_base",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "annul_w_water",
+     "low": 0.83,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_pause",
+     "low": 0.83,
+     "high": 0.85,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard",
+     "low": 0.86,
+     "high": 0.79,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard_exp",
+     "low": 0.84,
+     "high": 0.8,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_intercept",
+     "low": 0.76,
+     "high": 0.8,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_nuisance",
+     "low": 0.8,
+     "high": 0.8,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_water",
+     "low": 0.77,
+     "high": 0.8,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_saturation",
+     "low": 0.84,
+     "high": 0.81,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_contagion",
+     "low": 0.79,
+     "high": 0.83,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_decay",
+     "low": 0.82,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_gain_pertinencia",
+     "low": 0.83,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "local_hire_share",
+     "low": 0.82,
+     "high": 0.83,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "capex_musd_per_mw",
+     "low": 0.85,
+     "high": 0.83,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "jobs_build_per_musd",
+     "low": 0.83,
+     "high": 0.85,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "nox_g_per_kwh",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "test_hours_year",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "outages_per_year",
+     "low": 0.84,
+     "high": 0.84,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    }
+   ],
+   "range": [
+    0.73,
+    0.86
+   ],
+   "holds": 80,
+   "total": 80,
+   "holds_consistent": 80,
+   "total_consistent": 80,
+   "top": [
+    {
+     "key": "pert_months",
+     "label": "Mediana de pertinencia + permisos sectoriales",
+     "low": 0.73,
+     "high": 0.85
+    },
+    {
+     "key": "lit_w_water",
+     "label": "Peso del agua de un acuífero como fundamento de un juicio",
+     "low": 0.78,
+     "high": 0.86
+    },
+    {
+     "key": "op_intercept",
+     "label": "Rechazo de partida de un hogar sin data centers cerca",
+     "low": 0.76,
+     "high": 0.8
+    }
+   ],
+   "joint": {
+    "value": 0.79,
+    "holds": true,
+    "n": 400
+   }
+  },
+  {
+   "id": "permisos",
+   "kicker": "El cuello de botella no es el permiso",
+   "claim": "Permisos 4 veces más rápidos casi no suman data centers en Santiago al 2030: el cuello de botella es la red.",
+   "criterion": "Se mantiene si los MW operando en la RM en 2030 suben menos de 5%.",
+   "metric": "Cambio de los MW operando en la RM en 2030",
+   "fmt": "pct",
+   "base": 0.0038,
+   "headline": "+0,4% MW en la RM con permisos 4× más rápidos",
+   "oat": [
+    {
+     "key": "pue_hybrid",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "peak_pue_ratio",
+     "low": 0.0107,
+     "high": 0.0096,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "noncd_mwh_per_person",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_twh_2025",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_growth",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "grid_cost_musd_per_mw",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_air",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_hybrid",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_summer_factor",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "liters_household_day",
+     "low": 0.0045,
+     "high": 0.0026,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "recharge_cut",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "seia_months",
+     "low": 0.0,
+     "high": 0.0006,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "pert_months",
+     "low": 0.0012,
+     "high": 0.0104,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "build_months",
+     "low": 0.0159,
+     "high": 0.0164,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_t_per_mw",
+     "low": 0.0038,
+     "high": 0.0041,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_min_t_per_mw",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_bunch",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_base",
+     "low": 0.0042,
+     "high": 0.0052,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_conflict",
+     "low": 0.0001,
+     "high": 0.0037,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_w_water",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_convexity",
+     "low": 0.0084,
+     "high": 0.0078,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_months",
+     "low": 0.0105,
+     "high": 0.0024,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_annul_base",
+     "low": 0.0,
+     "high": 0.0034,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "annul_w_water",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_pause",
+     "low": 0.0086,
+     "high": 0.0113,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard_exp",
+     "low": 0.0042,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_intercept",
+     "low": 0.0017,
+     "high": 0.0213,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_nuisance",
+     "low": 0.0061,
+     "high": 0.0215,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_water",
+     "low": 0.0067,
+     "high": 0.0045,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_saturation",
+     "low": 0.0042,
+     "high": 0.0041,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_contagion",
+     "low": 0.0052,
+     "high": 0.0024,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_decay",
+     "low": 0.0022,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_gain_pertinencia",
+     "low": 0.0042,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "local_hire_share",
+     "low": 0.0041,
+     "high": 0.0016,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "capex_musd_per_mw",
+     "low": 0.0041,
+     "high": 0.0022,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "jobs_build_per_musd",
+     "low": 0.0041,
+     "high": 0.0026,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "nox_g_per_kwh",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "test_hours_year",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "outages_per_year",
+     "low": 0.0038,
+     "high": 0.0038,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    }
+   ],
+   "range": [
+    0.0,
+    0.0215
+   ],
+   "holds": 80,
+   "total": 80,
+   "holds_consistent": 80,
+   "total_consistent": 80,
+   "top": [
+    {
+     "key": "op_intercept",
+     "label": "Rechazo de partida de un hogar sin data centers cerca",
+     "low": 0.0017,
+     "high": 0.0213
+    },
+    {
+     "key": "op_w_nuisance",
+     "label": "Peso de las molestias cercanas (ruido, diésel, paisaje) en la opinión",
+     "low": 0.0061,
+     "high": 0.0215
+    },
+    {
+     "key": "build_months",
+     "label": "Mediana de construcción",
+     "low": 0.0159,
+     "high": 0.0164
+    }
+   ],
+   "joint": {
+    "value": 0.0069,
+    "holds": true,
+    "n": 400
+   }
+  },
+  {
+   "id": "boom",
+   "kicker": "Punto de quiebre",
+   "claim": "Con el doble de proyectos nuevos al año, los juicios crecen proporcionalmente más que los MW conectados.",
+   "criterion": "Se mantiene si los juicios a 2035 se multiplican por más que los MW operando (cociente mayor que 1).",
+   "metric": "Cuántas veces más crecen los juicios que los MW operando (2035)",
+   "fmt": "ratio",
+   "base": 2.1489,
+   "headline": "×2,3 juicios con el doble de proyectos",
+   "oat": [
+    {
+     "key": "pue_hybrid",
+     "low": 2.1405,
+     "high": 2.1484,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "peak_pue_ratio",
+     "low": 2.1668,
+     "high": 2.1803,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "noncd_mwh_per_person",
+     "low": 2.1532,
+     "high": 2.0426,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_twh_2025",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_growth",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "grid_cost_musd_per_mw",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_air",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_hybrid",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_summer_factor",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "liters_household_day",
+     "low": 2.1206,
+     "high": 2.0822,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "recharge_cut",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "seia_months",
+     "low": 2.1403,
+     "high": 2.0953,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "pert_months",
+     "low": 2.287,
+     "high": 2.1862,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "build_months",
+     "low": 1.9412,
+     "high": 2.0411,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_t_per_mw",
+     "low": 2.0558,
+     "high": 2.0282,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_min_t_per_mw",
+     "low": 2.1485,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_bunch",
+     "low": 2.1548,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_base",
+     "low": 2.0504,
+     "high": 2.0801,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_conflict",
+     "low": 2.1697,
+     "high": 2.1947,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_w_water",
+     "low": 2.1077,
+     "high": 1.975,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_convexity",
+     "low": 2.0895,
+     "high": 2.2371,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_months",
+     "low": 2.1912,
+     "high": 2.074,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_annul_base",
+     "low": 2.0647,
+     "high": 2.154,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "annul_w_water",
+     "low": 2.0576,
+     "high": 2.1059,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_pause",
+     "low": 2.1269,
+     "high": 2.1705,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard",
+     "low": 2.1628,
+     "high": 2.1645,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard_exp",
+     "low": 2.1619,
+     "high": 2.1523,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_intercept",
+     "low": 1.9852,
+     "high": 2.1674,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_nuisance",
+     "low": 2.1975,
+     "high": 2.161,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_water",
+     "low": 1.7992,
+     "high": 2.0811,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_saturation",
+     "low": 1.875,
+     "high": 2.1438,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_contagion",
+     "low": 2.0206,
+     "high": 2.1882,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_decay",
+     "low": 1.9674,
+     "high": 2.116,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_gain_pertinencia",
+     "low": 1.8077,
+     "high": 2.2047,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "local_hire_share",
+     "low": 2.1275,
+     "high": 1.9053,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "capex_musd_per_mw",
+     "low": 2.0308,
+     "high": 2.0514,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "jobs_build_per_musd",
+     "low": 2.0333,
+     "high": 1.9574,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "nox_g_per_kwh",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "test_hours_year",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "outages_per_year",
+     "low": 2.1489,
+     "high": 2.1489,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    }
+   ],
+   "range": [
+    1.7992,
+    2.287
+   ],
+   "holds": 80,
+   "total": 80,
+   "holds_consistent": 80,
+   "total_consistent": 80,
+   "top": [
+    {
+     "key": "trust_gain_pertinencia",
+     "label": "Desconfianza que deja cada aprobación por pertinencia (sin participación)",
+     "low": 1.8077,
+     "high": 2.2047
+    },
+    {
+     "key": "op_w_water",
+     "label": "Peso del agua que los vecinos ven usar en la opinión",
+     "low": 1.7992,
+     "high": 2.0811
+    },
+    {
+     "key": "op_w_saturation",
+     "label": "Peso de la saturación (parte de la electricidad de la comuna que usan los DC) en la opinión",
+     "low": 1.875,
+     "high": 2.1438
+    }
+   ],
+   "joint": {
+    "value": 1.9559,
+    "holds": true,
+    "n": 400
+   }
+  },
+  {
+   "id": "cerrillos",
+   "kicker": "Historia alternativa",
+   "claim": "Si Google hubiera enfriado Cerrillos con aire, la probabilidad de juicio habría sido mucho menor.",
+   "criterion": "Se mantiene si con aire la probabilidad de juicio baja al menos 25 puntos y queda en la mitad o menos.",
+   "metric": "Probabilidad de juicio contra Google Cerrillos: con agua y con aire",
+   "fmt": "pair_pct",
+   "base": [
+    0.83,
+    0.01
+   ],
+   "headline": "83% → 2% probabilidad de juicio: agua → aire",
+   "oat": [
+    {
+     "key": "pue_hybrid",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "peak_pue_ratio",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "noncd_mwh_per_person",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_twh_2025",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_growth",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "grid_cost_musd_per_mw",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_air",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_hybrid",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_summer_factor",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "liters_household_day",
+     "low": [
+      0.86,
+      0.01
+     ],
+     "high": [
+      0.61,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "recharge_cut",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "seia_months",
+     "low": [
+      0.61,
+      0.01
+     ],
+     "high": [
+      0.9,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "pert_months",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "build_months",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_t_per_mw",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_min_t_per_mw",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_bunch",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_base",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.02
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_conflict",
+     "low": [
+      0.77,
+      0.01
+     ],
+     "high": [
+      0.84,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_w_water",
+     "low": [
+      0.78,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_convexity",
+     "low": [
+      0.9,
+      0.06
+     ],
+     "high": [
+      0.63,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_months",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_annul_base",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "annul_w_water",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_pause",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard_exp",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_intercept",
+     "low": [
+      0.49,
+      0.01
+     ],
+     "high": [
+      0.88,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_nuisance",
+     "low": [
+      0.79,
+      0.01
+     ],
+     "high": [
+      0.84,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_water",
+     "low": [
+      0.08,
+      0.01
+     ],
+     "high": [
+      0.9,
+      0.01
+     ],
+     "holds_low": false,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_saturation",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_contagion",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_decay",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_gain_pertinencia",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "local_hire_share",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "capex_musd_per_mw",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "jobs_build_per_musd",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "nox_g_per_kwh",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "test_hours_year",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "outages_per_year",
+     "low": [
+      0.83,
+      0.01
+     ],
+     "high": [
+      0.83,
+      0.01
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    }
+   ],
+   "range": [
+    0.07,
+    0.89
+   ],
+   "holds": 79,
+   "total": 80,
+   "holds_consistent": 79,
+   "total_consistent": 80,
+   "top": [
+    {
+     "key": "op_w_water",
+     "label": "Peso del agua que los vecinos ven usar en la opinión",
+     "low": 0.07,
+     "high": 0.89
+    },
+    {
+     "key": "op_intercept",
+     "label": "Rechazo de partida de un hogar sin data centers cerca",
+     "low": 0.48,
+     "high": 0.87
+    },
+    {
+     "key": "seia_months",
+     "label": "Mediana de tramitación SEIA + permisos",
+     "low": 0.6,
+     "high": 0.89
+    }
+   ],
+   "joint": {
+    "value": [
+     0.69,
+     0.035
+    ],
+    "holds": true,
+    "n": 400
+   }
+  },
+  {
+   "id": "lampa",
+   "kicker": "Dónde importa más que cuánto",
+   "claim": "Alejar Campo de Datos Lampa de las casas baja fuerte el conflicto de toda la comuna.",
+   "criterion": "Se mantiene si los hogares movilizados en Lampa (2035) bajan 25% o más.",
+   "metric": "Baja de los hogares movilizados en Lampa (2035)",
+   "fmt": "pct",
+   "base": 0.6181,
+   "headline": "−60% conflicto en Lampa",
+   "oat": [
+    {
+     "key": "pue_hybrid",
+     "low": 0.6306,
+     "high": 0.6277,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "peak_pue_ratio",
+     "low": 0.5761,
+     "high": 0.5745,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "noncd_mwh_per_person",
+     "low": 0.6307,
+     "high": 0.6137,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_twh_2025",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_growth",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "grid_cost_musd_per_mw",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_air",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_hybrid",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_summer_factor",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "liters_household_day",
+     "low": 0.5714,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "recharge_cut",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "seia_months",
+     "low": 0.6181,
+     "high": 0.6266,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "pert_months",
+     "low": 0.6088,
+     "high": 0.6277,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "build_months",
+     "low": 0.6277,
+     "high": 0.6224,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_t_per_mw",
+     "low": 0.6414,
+     "high": 0.5869,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_min_t_per_mw",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_bunch",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_base",
+     "low": 0.6181,
+     "high": 0.6063,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_conflict",
+     "low": 0.6181,
+     "high": 0.6385,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_w_water",
+     "low": 0.6181,
+     "high": 0.6306,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_convexity",
+     "low": 0.6018,
+     "high": 0.6137,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_months",
+     "low": 0.5956,
+     "high": 0.563,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_annul_base",
+     "low": 0.6094,
+     "high": 0.5868,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "annul_w_water",
+     "low": 0.6137,
+     "high": 0.5977,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_pause",
+     "low": 0.6306,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard",
+     "low": 0.5841,
+     "high": 0.6094,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard_exp",
+     "low": 0.6181,
+     "high": 0.6094,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_intercept",
+     "low": 0.6361,
+     "high": 0.5263,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_nuisance",
+     "low": 0.7502,
+     "high": 0.5447,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_water",
+     "low": 0.5905,
+     "high": 0.5638,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_saturation",
+     "low": 0.6055,
+     "high": 0.5933,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_contagion",
+     "low": 0.5961,
+     "high": 0.6144,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_decay",
+     "low": 0.6097,
+     "high": 0.5881,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_gain_pertinencia",
+     "low": 0.6279,
+     "high": 0.596,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "local_hire_share",
+     "low": 0.606,
+     "high": 0.6112,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "capex_musd_per_mw",
+     "low": 0.57,
+     "high": 0.619,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "jobs_build_per_musd",
+     "low": 0.6385,
+     "high": 0.6224,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "nox_g_per_kwh",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "test_hours_year",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "outages_per_year",
+     "low": 0.6181,
+     "high": 0.6181,
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    }
+   ],
+   "range": [
+    0.5263,
+    0.7502
+   ],
+   "holds": 80,
+   "total": 80,
+   "holds_consistent": 80,
+   "total_consistent": 80,
+   "top": [
+    {
+     "key": "op_w_nuisance",
+     "label": "Peso de las molestias cercanas (ruido, diésel, paisaje) en la opinión",
+     "low": 0.7502,
+     "high": 0.5447
+    },
+    {
+     "key": "op_intercept",
+     "label": "Rechazo de partida de un hogar sin data centers cerca",
+     "low": 0.6361,
+     "high": 0.5263
+    },
+    {
+     "key": "lit_months",
+     "label": "Mediana de duración de un litigio",
+     "low": 0.5956,
+     "high": 0.563
+    }
+   ],
+   "joint": {
+    "value": 0.5776,
+    "holds": true,
+    "n": 400
+   }
+  },
+  {
+   "id": "transparencia",
+   "kicker": "Información vs plata",
+   "claim": "Publicar el uso real de agua baja el conflicto en una magnitud parecida a la de un fondo comunitario de US$20.000 por MW al año.",
+   "criterion": "Se mantiene si las dos reglas bajan el conflicto y la transparencia logra al menos dos tercios de la baja del fondo.",
+   "metric": "Cambio de los hogares movilizados en la RM (2035): transparencia y fondo",
+   "fmt": "pair_pct",
+   "base": [
+    -0.2807,
+    -0.3041
+   ],
+   "headline": "US$38 M al año, lo que 'vale' la transparencia",
+   "oat": [
+    {
+     "key": "pue_hybrid",
+     "low": [
+      -0.2886,
+      -0.309
+     ],
+     "high": [
+      -0.282,
+      -0.3081
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "peak_pue_ratio",
+     "low": [
+      -0.2861,
+      -0.3092
+     ],
+     "high": [
+      -0.2716,
+      -0.2716
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "noncd_mwh_per_person",
+     "low": [
+      -0.2759,
+      -0.296
+     ],
+     "high": [
+      -0.2697,
+      -0.2879
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_twh_2025",
+     "low": [
+      -0.2807,
+      -0.3041
+     ],
+     "high": [
+      -0.2807,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "system_growth",
+     "low": [
+      -0.2807,
+      -0.3041
+     ],
+     "high": [
+      -0.2807,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "grid_cost_musd_per_mw",
+     "low": [
+      -0.2807,
+      -0.3041
+     ],
+     "high": [
+      -0.2807,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_air",
+     "low": [
+      -0.2836,
+      -0.3041
+     ],
+     "high": [
+      -0.2719,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_hybrid",
+     "low": [
+      -0.2836,
+      -0.3041
+     ],
+     "high": [
+      -0.2807,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "wue_summer_factor",
+     "low": [
+      -0.2807,
+      -0.3041
+     ],
+     "high": [
+      -0.2807,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "liters_household_day",
+     "low": [
+      -0.3161,
+      -0.2997
+     ],
+     "high": [
+      -0.2671,
+      -0.3075
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "recharge_cut",
+     "low": [
+      -0.2807,
+      -0.3041
+     ],
+     "high": [
+      -0.2807,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "seia_months",
+     "low": [
+      -0.2895,
+      -0.3041
+     ],
+     "high": [
+      -0.2962,
+      -0.2933
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "pert_months",
+     "low": [
+      -0.2583,
+      -0.2823
+     ],
+     "high": [
+      -0.2928,
+      -0.3014
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "build_months",
+     "low": [
+      -0.2832,
+      -0.3179
+     ],
+     "high": [
+      -0.2887,
+      -0.2768
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_t_per_mw",
+     "low": [
+      -0.2836,
+      -0.2955
+     ],
+     "high": [
+      -0.2787,
+      -0.2902
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "fuel_min_t_per_mw",
+     "low": [
+      -0.2849,
+      -0.2965
+     ],
+     "high": [
+      -0.2757,
+      -0.305
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_bunch",
+     "low": [
+      -0.2857,
+      -0.2974
+     ],
+     "high": [
+      -0.2786,
+      -0.3021
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_base",
+     "low": [
+      -0.3021,
+      -0.3079
+     ],
+     "high": [
+      -0.2688,
+      -0.3006
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_lit_conflict",
+     "low": [
+      -0.2946,
+      -0.3036
+     ],
+     "high": [
+      -0.2738,
+      -0.2968
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_w_water",
+     "low": [
+      -0.3027,
+      -0.3086
+     ],
+     "high": [
+      -0.2733,
+      -0.2965
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_convexity",
+     "low": [
+      -0.2882,
+      -0.2906
+     ],
+     "high": [
+      -0.3015,
+      -0.3046
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "lit_months",
+     "low": [
+      -0.2596,
+      -0.2891
+     ],
+     "high": [
+      -0.2985,
+      -0.2687
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_annul_base",
+     "low": [
+      -0.2741,
+      -0.2866
+     ],
+     "high": [
+      -0.2759,
+      -0.2931
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "annul_w_water",
+     "low": [
+      -0.281,
+      -0.2749
+     ],
+     "high": [
+      -0.2717,
+      -0.2948
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "p_pause",
+     "low": [
+      -0.2845,
+      -0.3021
+     ],
+     "high": [
+      -0.2836,
+      -0.2924
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard",
+     "low": [
+      -0.2815,
+      -0.2815
+     ],
+     "high": [
+      -0.2924,
+      -0.3129
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "reloc_hazard_exp",
+     "low": [
+      -0.2807,
+      -0.3041
+     ],
+     "high": [
+      -0.2828,
+      -0.2945
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_intercept",
+     "low": [
+      -0.2749,
+      -0.3081
+     ],
+     "high": [
+      -0.285,
+      -0.3356
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_nuisance",
+     "low": [
+      -0.4869,
+      -0.445
+     ],
+     "high": [
+      -0.207,
+      -0.2247
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_water",
+     "low": [
+      -0.1943,
+      -0.2898
+     ],
+     "high": [
+      -0.3614,
+      -0.3168
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_w_saturation",
+     "low": [
+      -0.2927,
+      -0.2892
+     ],
+     "high": [
+      -0.2809,
+      -0.3075
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "op_contagion",
+     "low": [
+      -0.2439,
+      -0.2846
+     ],
+     "high": [
+      -0.3115,
+      -0.3146
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_decay",
+     "low": [
+      -0.2715,
+      -0.2947
+     ],
+     "high": [
+      -0.3053,
+      -0.3079
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "trust_gain_pertinencia",
+     "low": [
+      -0.2955,
+      -0.2792
+     ],
+     "high": [
+      -0.2789,
+      -0.3105
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "local_hire_share",
+     "low": [
+      -0.2812,
+      -0.3097
+     ],
+     "high": [
+      -0.2827,
+      -0.2918
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "capex_musd_per_mw",
+     "low": [
+      -0.2841,
+      -0.2953
+     ],
+     "high": [
+      -0.2919,
+      -0.2826
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "jobs_build_per_musd",
+     "low": [
+      -0.2853,
+      -0.317
+     ],
+     "high": [
+      -0.2844,
+      -0.2904
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "nox_g_per_kwh",
+     "low": [
+      -0.2807,
+      -0.3041
+     ],
+     "high": [
+      -0.2807,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "test_hours_year",
+     "low": [
+      -0.2807,
+      -0.3041
+     ],
+     "high": [
+      -0.2807,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    },
+    {
+     "key": "outages_per_year",
+     "low": [
+      -0.2807,
+      -0.3041
+     ],
+     "high": [
+      -0.2807,
+      -0.3041
+     ],
+     "holds_low": true,
+     "holds_high": true,
+     "consistent_low": true,
+     "consistent_high": true
+    }
+   ],
+   "range": [
+    0.6707,
+    1.1406
+   ],
+   "holds": 80,
+   "total": 80,
+   "holds_consistent": 80,
+   "total_consistent": 80,
+   "top": [
+    {
+     "key": "op_w_water",
+     "label": "Peso del agua que los vecinos ven usar en la opinión",
+     "low": 0.6707,
+     "high": 1.1406
+    },
+    {
+     "key": "lit_months",
+     "label": "Mediana de duración de un litigio",
+     "low": 0.898,
+     "high": 1.1111
+    },
+    {
+     "key": "liters_household_day",
+     "label": "Consumo de agua por hogar",
+     "low": 1.0545,
+     "high": 0.8687
+    }
+   ],
+   "joint": {
+    "value": [
+     -0.2892,
+     -0.2922
+    ],
+    "holds": true,
+    "n": 400
+   }
+  }
+ ]
+}

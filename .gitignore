@@ -5,6 +5,7 @@ __pycache__/
 .DS_Store
 cache/*
 !cache/findings.json
+!cache/sensitivity.json
 .taste-skill/
 # resultados precalculados que usa el servidor (python -m dcsim.precompute)
 !cache/anchored_200_*.json
