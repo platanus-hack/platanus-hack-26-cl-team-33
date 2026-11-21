@@ -209,7 +209,7 @@
 
     <!-- Tres hallazgos, uno por pantalla -->
     <section class="chapters" id="hallazgos" aria-label="Hallazgos">
-      <article class="chapter" style="--field:#10306b">
+      <article class="chapter" style="--field:#10306b" data-finding="permisos">
         <div class="field">
           <h2 class="ch-title">El freno es la red, no el permiso</h2>
           <img class="ch-photo" src="/static/img/torres-charrua-1.jpg" width="1920" height="3413" alt="Torres de alta tensión junto a un camino seco en Charrúa" loading="lazy">
@@ -217,7 +217,7 @@
           <a class="ch-link" href="#simular" data-tab="mesa">Probar permisos rápidos</a>
         </div>
       </article>
-      <article class="chapter" style="--field:#1d2816">
+      <article class="chapter" style="--field:#1d2816" data-finding="cerrillos">
         <div class="field">
           <h2 class="ch-title">El agua decide el juicio</h2>
           <img class="ch-photo" src="/static/img/canal-ortuzano-estacion-central-y-cerrillos-santiago.jpg" width="1920" height="1280" alt="Canal Ortuzano entre Estación Central y Cerrillos" loading="lazy">
@@ -225,7 +225,7 @@
           <a class="ch-link" href="#simular" data-project="google_cerrillos" data-year="2024">Ver Cerrillos en el mapa</a>
         </div>
       </article>
-      <article class="chapter" style="--field:#131417">
+      <article class="chapter" style="--field:#131417" data-finding="boom">
         <div class="field">
           <h2 class="ch-title">Más proyectos, más espera</h2>
           <img class="ch-photo" src="/static/img/rear-of-rack-at-nersc-data-center.jpg" width="1920" height="2889" alt="Parte trasera de un rack de servidores con cables" loading="lazy">
@@ -257,7 +257,7 @@
     <section class="detail" id="detalle" aria-labelledby="detail-title">
       <div class="detail-head" data-rise>
         <h2 id="detail-title" class="head">Detalle técnico</h2>
-        <p class="detail-lead">Para quien quiera revisar el modelo por dentro: los hallazgos restantes, los catorce chequeos, cómo funciona, sus ecuaciones, lo que no sabemos, cada supuesto con su fuente y cada proyecto usado. Cada parte se abre por separado.</p>
+        <p class="detail-lead">Para quien quiera revisar el modelo por dentro: los hallazgos restantes, los catorce chequeos, qué tan firmes son los hallazgos, cómo funciona, sus ecuaciones, lo que no sabemos, cada supuesto con su fuente y cada proyecto usado. Cada parte se abre por separado.</p>
       </div>
       <details id="mas-hallazgos" data-rise>
         <summary>Los otros cuatro hallazgos</summary>
@@ -266,6 +266,10 @@
       <details id="chequeos" data-rise>
         <summary>Los catorce chequeos con datos reales</summary>
         <div class="detail-body" id="checksBody"></div>
+      </details>
+      <details id="firmeza" data-rise>
+        <summary>Qué tan firmes son los hallazgos</summary>
+        <div class="detail-body prose" id="firmezaBody"></div>
       </details>
       <details id="como" data-rise>
         <summary>Cómo funciona</summary>
