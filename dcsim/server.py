@@ -48,7 +48,7 @@ async def _no_cache_static(request, call_next):
     if request.url.path == "/" or request.url.path.startswith("/static"):
         resp.headers["Cache-Control"] = "no-cache"
     return resp
-_lock = threading.Lock()
+_lock = threading.RLock()  # reentrante: story() e insights() piden escenarios dentro de _cached
 _memo: dict = {}
 
 
