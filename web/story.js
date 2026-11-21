@@ -45,7 +45,7 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
   .then(([story, meta]) => {
     S.story = story;
     S.meta = meta;
-    S.noteText = `Corre ${story.n_custom || 100} futuros; tarda unos segundos.`;
+    S.noteText = `Corre ${story.n_custom || 100} futuros; puede tardar hasta un minuto.`;
     $("#customNote").textContent = S.noteText;
     renderNumbers(false);
     fillFindings();
