@@ -507,6 +507,7 @@ document.querySelectorAll("[data-open]").forEach((a) => a.addEventListener("clic
 
 const lazy = {
   "mas-hallazgos": () => fillMoreFindings(),
+  matematica: () => { $("#mathBody").replaceChildren($("#mathTpl").content.cloneNode(true)); return Promise.resolve(); },
   chequeos: () => fetch("/api/validation").then((r) => r.json()).then((v) => {
     const n = (x) => fmt(x, Math.abs(x) < 10 && x % 1 ? 1 : 0);
     const show = (x) => {

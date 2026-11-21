@@ -401,3 +401,18 @@ table.data .range { color: var(--muted); }
 }
 .map-info dd small { display: block; font-weight: 400; color: var(--muted); }
 .seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ---------- modelo matemático */
+.math { max-width: 920px; }
+.math h3 { font-size: var(--step-body); font-weight: 600; margin: 32px 0 10px; }
+.math-intro { max-width: 62ch; }
+.eq {
+  font-size: var(--step-body); background: var(--bg); padding: 12px 16px; margin: 6px 0;
+  font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+}
+.eq var, .where var, .math-intro var { font-style: italic; }
+.where { font-size: var(--step-small); color: var(--muted); max-width: 62ch; margin: 8px 0 0; }
+ul.where { padding-left: 18px; }
+ul.where li { margin-bottom: 6px; }
+.flow { padding-left: 22px; max-width: 62ch; }
+.flow li { margin-bottom: 8px; }
