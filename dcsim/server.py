@@ -20,15 +20,17 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 from . import catalog as C
+from . import place as PL
 from .insights import METRICS, hypotheses, scenario_deltas, winners_losers
-from .model import STATUS_LABELS, SYNTH_RATE_MAX
+from .model import STATUS_LABELS, SYNTH_RATE_MAX, nominal_it_mw
 from .montecarlo import run_ensemble
-from .params import PARAMS, P
+from .params import PARAMS
 from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS, Policy
 from .validation import run_validation
 
 N_PRESET = 200
 N_CUSTOM = int(os.environ.get("DCSIM_N_CUSTOM", "100"))  # futuros por regla propia
+N_PLACE = int(os.environ.get("DCSIM_N_PLACE", "40"))  # futuros (pares con/sin) por data center
 WEB = Path(__file__).resolve().parent.parent / "web"
 
 @asynccontextmanager
@@ -83,13 +85,6 @@ def _warm() -> None:
     threading.Thread(target=work, daemon=True).start()
 
 
-def _it_mw(p: C.Project) -> float:
-    """Potencia TI. Para la lista de espera del CEN el catálogo trae la potencia de conexión."""
-    if p.extra.get("request_mw"):
-        return round(p.it_mw / (P["pue_air"].base * P["peak_pue_ratio"].base), 1)
-    return p.it_mw
-
-
 @app.get("/api/meta")
 def meta() -> dict:
     return {
@@ -101,7 +96,7 @@ def meta() -> dict:
                       "radius_km": c.radius_km}
                      for c in C.COMMUNES],
         "projects": [{"id": p.id, "name": p.name, "operator": p.operator, "commune": p.commune,
-                      "lat": p.lat, "lon": p.lon, "it_mw": _it_mw(p),
+                      "lat": p.lat, "lon": p.lon, "it_mw": nominal_it_mw(p),
                       "request_mw": p.it_mw if p.extra.get("request_mw") else None,
                       "cooling": p.cooling,
                       "fuel_t": p.fuel_t, "real_status": p.real_status,
@@ -118,6 +113,11 @@ def meta() -> dict:
         "params": [asdict(p) for p in PARAMS],
         "metrics": {k: {"label": v[0], "unit": v[1], "good_up": v[2]} for k, v in METRICS.items()},
         "observed": C.OBSERVED,
+        "place": {"years": PL.YEARS, "sizes": list(PL.SIZES), "coolings": list(PL.COOLINGS),
+                  "radius_km": PL.RADIUS_KM, "n": N_PLACE,
+                  "areas": [[round(la, 4), round(lo, 4), r, round(d)]
+                            for _c, la, lo, r, d in PL.COMPS],
+                  "rules": [{"id": k, "name": SCENARIOS[k]["name"]} for k in PL.RULES]},
     }
 
 
@@ -164,6 +164,47 @@ def run_custom(req: RunRequest) -> dict:
                 _custom.popitem(last=False)
         _custom.move_to_end(key)
         return _custom[key]
+
+
+@app.get("/api/place/site")
+def place_site(lat: float, lon: float) -> dict:
+    """Comuna, nodo de red, acuífero y hogares alrededor de un punto (rápido, sin simular)."""
+    return PL.site_info(round(lat, 4), round(lon, 4))
+
+
+class PlaceRequest(BaseModel):
+    lat: float
+    lon: float
+    it_mw: float = 30
+    cooling: str = "evaporativo"
+    year: int = 2027
+    hv_line: bool = False
+    grid_priority: bool = False
+    rule: str = "status_quo"
+
+
+_place_lock = threading.Lock()
+_place_memo: OrderedDict = OrderedDict()
+
+
+@app.post("/api/place")
+def place(req: PlaceRequest) -> dict:
+    """Corre N_PLACE futuros con y sin el data center del usuario."""
+    try:
+        spec = PL.normalize(req.model_dump())
+        key = (tuple(sorted(spec.items())), N_PLACE)
+        with _place_lock:
+            if key in _place_memo:
+                _place_memo.move_to_end(key)
+                return _place_memo[key]
+        res = PL.simulate(spec, n=N_PLACE)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    with _place_lock:
+        _place_memo[key] = res
+        while len(_place_memo) > 24:
+            _place_memo.popitem(last=False)
+    return res
 
 
 @app.get("/api/validation")

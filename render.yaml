@@ -14,5 +14,7 @@ services:
         value: "1"
       - key: DCSIM_N_CUSTOM     # futuros que corre "Tu regla": 60 en free (~50 s), 100 en standard
         value: "60"
+      - key: DCSIM_N_PLACE      # futuros de "Coloca un data center" (2 corridas c/u): 20 en free (~35 s), 40 en standard
+        value: "20"
       - key: PYTHON_VERSION     # la misma versión con la que se probó localmente
         value: "3.12.16"

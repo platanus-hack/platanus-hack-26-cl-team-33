@@ -10,6 +10,7 @@ Aterriza pone todos los proyectos reales en un solo modelo y proyecta qué le pa
 
 - **Elegir una regla** y ver cómo cambian las cifras de 2035 y el mapa. Las reglas son: seguir como hoy, permisos más rápidos, solo enfriamiento por aire, evaluar por zona con los vecinos, incentivo para irse al norte, o las tres que más ayudan juntas.
 - **Armar tu propia regla** palanca por palanca y simularla en segundos.
+- **Colocar un data center** en el mapa (tamaño, enfriamiento, año y regla) y seguir a sus vecinos a menos de 3 km hasta 2035: cuántos se movilizan en contra, si llega a operar, si va a tribunales y a cuántos otros proyectos les quita red. Cada futuro se corre con y sin ese data center.
 - **Mover el año** de 2012 a 2035 y ver cómo se llena cada comuna, o cuánto cambia respecto de seguir como hoy.
 - **Tocar una comuna o un proyecto** para ver su detalle, su historia y su probabilidad de terminar operando, en tribunales o esperando red.
 

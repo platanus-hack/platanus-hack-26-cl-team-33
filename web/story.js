@@ -61,6 +61,7 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
     fillFindings();
     fillProof();
     initMap();
+    if (typeof initPlace === "function") initPlace(meta);
     loadEnsemble("status_quo").then(() => {
       updateMap();
       // el resto de las reglas en segundo plano: el mapa usa una sola escala de colores para todas
@@ -147,7 +148,7 @@ function renderNumbers(animate) {
   if (edit) edit.addEventListener("click", () => { S.editing = true; select("custom"); });
   const vals = valuesFor(id);
   if (!vals || (id === "custom" && S.editing)) return;
-  document.querySelectorAll(".band").forEach((band) => {
+  document.querySelectorAll("#bands .band").forEach((band) => {
     const k = band.dataset.k;
     const spec = BANDS[k];
     const val = band.querySelector(".val");

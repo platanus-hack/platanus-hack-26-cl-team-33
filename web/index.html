@@ -25,6 +25,7 @@
       <div class="hero-right">
         <nav class="nav" aria-label="Secciones">
           <a href="#simular">Simular</a>
+          <a href="#colocar">Colocar</a>
           <a href="#hallazgos">Hallazgos</a>
           <a href="#prueba">¿Funciona?</a>
           <a href="#detalle">Detalle técnico</a>
@@ -115,6 +116,93 @@
             <div class="band" data-k="bill_pct"><div><b>Alza de la cuenta de la luz</b><span class="note" data-bill-note>respecto de 2025; hipótesis con rango amplio</span></div><span class="val">…</span><span class="delta"></span></div>
           </div>
           <p class="sim-foot">Cifras para 2035: valor típico de 200 futuros simulados por regla. La historia hasta noviembre de 2026 es la real.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coloca un data center y sigue a sus vecinos -->
+    <section class="place" id="colocar" aria-labelledby="place-title">
+      <div class="sim-head" data-rise>
+        <h2 id="place-title" class="head"><span class="soft">Coloca un data center.</span> Mira a sus vecinos.</h2>
+        <p class="place-lead">Elige dónde, de qué tamaño y cómo se enfría. Lo simulamos en <span data-place-n>40</span> futuros, cada uno dos veces: con y sin tu data center.</p>
+      </div>
+      <div class="place-body">
+        <form class="custom place-form" id="placeForm" data-rise>
+          <p class="place-step"><b>1</b> Haz clic en el mapa para elegir el sitio.</p>
+          <div class="place-examples">o prueba en
+            <button type="button" data-ll="-33.355,-70.75,13">Quilicura</button>
+            <button type="button" data-ll="-33.33,-70.77,13">Lampa</button>
+            <button type="button" data-ll="-33.44,-70.80,13">Pudahuel</button>
+            <button type="button" data-ll="-23.65,-70.40,12">Antofagasta</button>
+          </div>
+          <div class="place-site" id="placeSite" aria-live="polite">Todavía no eliges un sitio. Las manchas grises son las zonas donde el modelo tiene hogares.</div>
+          <p class="place-step"><b>2</b> Cómo es.</p>
+          <label>Tamaño
+            <select name="it_mw"><option value="10">10 MW, pequeño</option><option value="30" selected>30 MW, el típico</option><option value="100">100 MW, como Lampa</option><option value="300">300 MW, hiperescala</option></select></label>
+          <label>Enfriamiento
+            <select name="cooling"><option value="evaporativo" selected>Con agua (evaporativo)</option><option value="hibrido">Híbrido</option><option value="aire">Por aire, casi sin agua</option></select></label>
+          <label>Se anuncia en
+            <select name="year" id="placeYear"></select></label>
+          <label>Regla vigente
+            <select name="rule" id="placeRule"></select></label>
+          <label class="check"><input type="checkbox" name="hv_line"> Necesita una línea de alta tensión nueva</label>
+          <label class="check"><input type="checkbox" name="grid_priority"> Conexión a la red garantizada: se salta la fila</label>
+          <button class="btn" type="submit" id="placeRun" disabled>Simular</button>
+          <p class="custom-note" id="placeNote">Primero elige un sitio en el mapa.</p>
+        </form>
+
+        <div class="place-mid">
+          <div class="map-card place-card" data-ui data-rise>
+            <div class="map-top">
+              <div class="seg" role="group" aria-label="Qué colorea a los hogares">
+                <button type="button" data-pview="value" aria-pressed="true">Hogares movilizados</button>
+                <button type="button" data-pview="diff" aria-pressed="false" disabled>Cambio por tu data center</button>
+              </div>
+            </div>
+            <div id="placeMap" role="application" aria-label="Mapa para colocar un data center. Haz clic para elegir el sitio."></div>
+            <div class="map-bottom">
+              <button class="play" id="placePlay" type="button" disabled>Ver desde 2026</button>
+              <label class="year"><span id="placeFrameLabel">—</span><input type="range" id="placeFrame" min="0" max="36" value="36" disabled aria-label="Momento en el mapa"></label>
+            </div>
+            <p class="map-when" id="placeWhen">Haz clic en el mapa para colocar tu data center</p>
+            <ul class="legend">
+              <li><i class="mk you"></i>Tu data center</li>
+              <li><i class="mk op"></i>Data centers reales</li>
+              <li><i class="mk hh"></i>Hogares de muestra a menos de 3 km</li>
+              <li><i class="mk area"></i>Zonas con hogares en el modelo</li>
+            </ul>
+          </div>
+          <div class="place-charts" id="placeCharts" hidden>
+            <figure class="pchart" id="chartMob">
+              <figcaption><b>Vecinos movilizados en contra</b><span>% de los hogares a menos de 3 km, valor típico de los futuros</span></figcaption>
+              <ul class="pkey"><li><i style="--c: var(--with)"></i>Con tu data center</li><li><i style="--c: var(--without)"></i>Sin él</li></ul>
+              <div class="pchart-plot"></div>
+            </figure>
+            <figure class="pchart" id="chartStatus">
+              <figcaption><b>Qué le pasa a tu data center</b><span>% de los futuros en cada estado</span></figcaption>
+              <ul class="pkey" id="statusKey"></ul>
+              <div class="pchart-plot"></div>
+            </figure>
+            <details class="ptable">
+              <summary>Ver los datos en una tabla</summary>
+              <div id="placeTable"></div>
+            </details>
+          </div>
+        </div>
+
+        <div class="numbers place-results" id="placeResults" aria-live="polite">
+          <p class="rule-summary" id="placeStory">Coloca un data center y simula. Verás cuándo empieza a operar, si va a tribunales y cuántos de sus vecinos se movilizan en contra, comparado con no construirlo.</p>
+          <div class="place-out" id="placeOut" hidden>
+            <div class="bands">
+              <div class="band" data-pk="mob"><div><b>Vecinos movilizados en contra</b><span class="note" data-pnote></span></div><span class="val"></span><span class="delta"></span></div>
+              <div class="band" data-pk="online"><div><b>Llega a operar antes de 2036</b><span class="note" data-pnote></span></div><span class="val"></span></div>
+              <div class="band" data-pk="sued"><div><b>Lo llevan a tribunales</b><span class="note" data-pnote></span></div><span class="val"></span></div>
+              <div class="band" data-pk="water"><div><b>Agua que usa, si opera</b><span class="note" data-pnote></span></div><span class="val"></span></div>
+              <div class="band" data-pk="money"><div><b>Patentes para la comuna, si opera</b><span class="note" data-pnote></span></div><span class="val"></span></div>
+              <div class="band" data-pk="others"><div><b>Otros data centers que no se conectan</b><span class="note" data-pnote></span></div><span class="val"></span></div>
+            </div>
+            <p class="sim-foot" id="placeFoot"></p>
+          </div>
         </div>
       </div>
     </section>
@@ -285,7 +373,7 @@
       </div>
       <div class="close-field">
         <h2 id="close-title" class="close-statement" data-rise>Ahora <a href="#simular" data-tab="custom">arma tu propia regla</a>.</h2>
-        <p class="close-text" data-rise>Elige cada palanca y mira, comuna por comuna, qué le pasa a la gente hasta 2035.</p>
+        <p class="close-text" data-rise>Elige cada palanca y mira, comuna por comuna, qué le pasa a la gente hasta 2035. O <a href="#colocar">coloca un data center</a> y sigue a sus vecinos.</p>
         <p class="close-small" data-rise><span id="closeStats">15.080 simulaciones, 200 futuros por regla, 14 de 14 chequeos con datos reales.</span><br>Hecho en 36 horas en Platanus Hack 26, Santiago.</p>
       </div>
     </section>
@@ -294,7 +382,7 @@
   <footer class="footer">
     <div class="foot-cols">
       <div><b>Aterriza</b><span>Simulador del efecto acumulado de los data centers en las comunas de Chile, 2012 a 2035.</span></div>
-      <div><b>Secciones</b><a href="#simular">Simular una regla</a><a href="#hallazgos">Hallazgos</a><a href="#prueba">La prueba</a><a href="#detalle">Detalle técnico</a></div>
+      <div><b>Secciones</b><a href="#simular">Simular una regla</a><a href="#colocar">Colocar un data center</a><a href="#hallazgos">Hallazgos</a><a href="#prueba">La prueba</a><a href="#detalle">Detalle técnico</a></div>
       <div><b>Datos</b><span>Informe de investigación, nov-2026</span><span>CEN, DGA, SEA, Censo 2017</span><span>Las cifras de prensa no son fuentes primarias</span></div>
       <div><b>Equipo 33</b><span>Platanus Hack 26: Santiago</span><span>Track Simulations</span></div>
     </div>
@@ -303,5 +391,6 @@
   </footer>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="/static/story.js"></script>
+  <script src="/static/place.js"></script>
 </body>
 </html>

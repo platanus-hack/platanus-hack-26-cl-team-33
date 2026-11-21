@@ -117,7 +117,7 @@ la RM de 2030 "como hoy" aparece como 836 MW en la sección 2 y 829 MW en esta t
 
 ```bash
 uv sync
-uv run pytest                                  # 19 tests
+uv run pytest                                  # 28 tests
 uv run python -m dcsim.precompute              # ensambles de la portada (cache/, ~40 s)
 uv run python -m dcsim.validation              # tabla de la sección 1
 uv run python -m dcsim.explore                 # ~15.000 simulaciones, ~3 min
