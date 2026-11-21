@@ -11,8 +11,7 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const Y0 = 2012;
 const yi = (y) => y - Y0;
 const ST = { NONE: 0, PERMIT: 1, WAIT: 2, LITIG: 3, BUILD: 4, OPER: 5, CANCEL: 6 };
-const INK = "#0b0c0e";
-const COBALT_RAMP = ["#dde1fa", "#b9c1f7", "#8e99f2", "#6372ee", "#3d4cea", "#1f2de6", "#1520a8"];
+const DC_INK = "#262b33";
 
 // cifra -> cómo mostrarla y si "más" es mejor (null = ni mejor ni peor)
 const BANDS = {
@@ -26,10 +25,21 @@ const BANDS = {
   bill_pct: { show: (v) => `+${fmt(v, 1)}%`, goodUp: false, points: true, scale: 1 },
 };
 const KEYS = ["it_chile", "dc_share_national", "water_ls_rm", "conflict_rm", "litigations", "invest_lost", "bill_pct"];
+// Cada capa tiene su propio tono (validado contra daltonismo): naranjo = conflicto, azul = agua,
+// magenta = data centers. En "cambio vs como hoy": verde = mejor, naranjo rojizo = peor.
+const BETTER = "#14866d";
+const WORSE = "#d8461b";
+const LESS_NEUTRAL = "#6b7c99";
 const METRICS = {
-  c_conflict: { label: "Vecinos movilizados", unit: "%", scale: 100, d: 0 },
-  c_water_ls: { label: "Agua de data centers", unit: "L/s", scale: 1, d: 1 },
-  c_it: { label: "Data centers operando", unit: "MW", scale: 1, d: 0 },
+  c_conflict: { label: "Vecinos movilizados", unit: "%", scale: 100, d: 0,
+    ramp: ["#fdece3", "#fbcfb6", "#f6a984", "#ef8356", "#e0622a", "#b8481a", "#86310d"],
+    hint: "Más oscuro: más hogares dispuestos a oponerse.", good: "down" },
+  c_water_ls: { label: "Agua que usan los data centers", unit: "L/s", scale: 1, d: 1,
+    ramp: ["#e4eefb", "#bdd6f6", "#8fb9ef", "#5c98e2", "#2a78d6", "#1d5daf", "#133f7c"],
+    hint: "Más oscuro: más agua.", good: "down" },
+  c_it: { label: "Data centers operando", unit: "MW", scale: 1, d: 0,
+    ramp: ["#f8e6f1", "#efc3dd", "#e099c4", "#cc6aa8", "#b03c8e", "#8a2b6f", "#5f1c4c"],
+    hint: "Más oscuro: más MW de data centers.", good: null },
 };
 
 const S = { story: null, meta: null, ens: {}, current: "status_quo", year: 2035, metric: "c_conflict",
@@ -37,8 +47,7 @@ const S = { story: null, meta: null, ens: {}, current: "status_quo", year: 2035,
 // al elegir una regla, el mapa muestra la capa donde esa regla más se nota
 const RULE_METRIC = { mesa: "c_it", aire: "c_water_ls", acumulativa: "c_conflict", norte: "c_it",
   paquete: "c_conflict", custom: "c_conflict" };
-const WARM = "#d8461b";
-const MID = "#d9dce2";
+const MID = "#dfe2e7";
 
 // ---------------------------------------------------------------- arranque
 Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then((r) => r.json())])
@@ -203,7 +212,16 @@ function describe(p) {
 let map; let communeLayer; let dcLayer;
 
 function initMap() {
-  map = L.map("map", { scrollWheelZoom: false, zoomControl: true }).setView([-33.45, -70.73], 10);
+  map = L.map("map", { scrollWheelZoom: false, zoomControl: false }).setView([-33.45, -70.73], 10);
+  L.control.zoom({ position: "bottomright" }).addTo(map);
+  const key = L.control({ position: "topleft" });
+  key.onAdd = () => {
+    const d = L.DomUtil.create("div", "map-key");
+    d.id = "mapKey";
+    L.DomEvent.disableClickPropagation(d);
+    return d;
+  };
+  key.addTo(map);
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 17, className: "base-tiles",
   }).addTo(map);
@@ -236,6 +254,7 @@ function setMetric(m, redraw = true) {
   S.metric = m;
   document.querySelectorAll(".seg [data-metric]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.metric === m)));
   document.querySelectorAll(".band[data-metric]").forEach((x) => x.classList.toggle("on", x.dataset.metric === m));
+  document.documentElement.style.setProperty("--layer", METRICS[m].ramp[4]);
   if (redraw) updateMap();
 }
 function setView(v, redraw = true) {
@@ -279,34 +298,58 @@ function mix(a, b, t) {
   const [x, y] = [hex(a), hex(b)];
   return `rgb(${x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(",")})`;
 }
-function ramp(t) {  // secuencial continua: un solo tono, de claro a oscuro
-  const n = COBALT_RAMP.length - 1;
+function ramp(t, stops = METRICS[S.metric].ramp) {  // secuencial continua: un tono, de claro a oscuro
+  const n = stops.length - 1;
   const p = Math.max(0, Math.min(1, t)) * n;
   const i = Math.min(n - 1, Math.floor(p));
-  return mix(COBALT_RAMP[i], COBALT_RAMP[i + 1], p - i);
+  return mix(stops[i], stops[i + 1], p - i);
 }
-function diverge(t) {  // divergente: cobalto = menos que como hoy, gris = igual, naranjo = más
+function poles(m = METRICS[S.metric]) {  // [color si baja, color si sube] respecto de seguir como hoy
+  if (m.good === "down") return [BETTER, WORSE];
+  return [LESS_NEUTRAL, m.ramp[4]];
+}
+function diverge(t) {  // divergente: gris = igual que como hoy; los extremos según poles()
   const a = Math.min(1, Math.abs(t)) ** 0.7;
-  return t < 0 ? mix(MID, COBALT_RAMP[5], a) : mix(MID, WARM, a);
+  const [lo, hi] = poles();
+  return t < 0 ? mix(MID, lo, a) : mix(MID, hi, a);
 }
-function diffMax(m) {
+function diffMax(m) {  // escala del modo cambio: el mayor cambio de la regla elegida (todas las comunas y años)
   const base = S.ens.status_quo;
+  const res = S.ens[S.current];
   let max = 0;
-  if (!base) return 1;
-  Object.entries(S.ens).forEach(([id, res]) => {
-    if (id === "status_quo") return;
-    res.communes[m].p50.forEach((row, i) => row.forEach((v, y) => { max = Math.max(max, Math.abs(v - base.communes[m].p50[i][y])); }));
-  });
+  if (!base || !res) return 1;
+  res.communes[m].p50.forEach((row, i) => row.forEach((v, y) => { max = Math.max(max, Math.abs(v - base.communes[m].p50[i][y])); }));
   return max * METRICS[m].scale || 1;
 }
 function dcStyle(code, mw) {
-  const r = 3 + 1.4 * Math.sqrt(mw);
-  if (code === ST.OPER) return { radius: r, color: "#ffffff", weight: 1.5, fillColor: INK, fillOpacity: 0.9 };
-  if (code === ST.BUILD) return { radius: r, color: INK, weight: 3, fillColor: INK, fillOpacity: 0.35 };
-  if (code === ST.PERMIT) return { radius: r, color: INK, weight: 2, fillOpacity: 0 };
-  if (code === ST.WAIT) return { radius: r, color: "#5d6470", weight: 2, dashArray: "3 4", fillOpacity: 0 };
-  if (code === ST.LITIG) return { radius: r, color: "#d03b3b", weight: 3, fillColor: "#d03b3b", fillOpacity: 0.12 };
+  const r = 3 + 1.0 * Math.sqrt(mw);
+  if (code === ST.OPER) return { radius: r, color: "#ffffff", weight: 1.5, fillColor: DC_INK, fillOpacity: 0.6 };
+  if (code === ST.BUILD) return { radius: r, color: DC_INK, weight: 2.5, fillColor: DC_INK, fillOpacity: 0.15 };
+  if (code === ST.PERMIT) return { radius: r, color: DC_INK, weight: 2, fillOpacity: 0 };
+  if (code === ST.WAIT) return { radius: r, color: "#5d6470", weight: 2.5, dashArray: "1 5", lineCap: "round", fillOpacity: 0 };
+  if (code === ST.LITIG) return { radius: r, color: "#c4152b", weight: 3, fillColor: "#ffffff", fillOpacity: 0.55 };
   return null;
+}
+
+function renderKey(m, max, diff) {
+  const el = $("#mapKey");
+  if (!el) return;
+  const unit = (v) => `${fmt(v, m.d)} ${m.unit}`;
+  if (diff) {
+    const [lo, hi] = poles(m);
+    const blocks = [-1, -0.66, -0.33, 0, 0.33, 0.66, 1].map((t) => `<b style="background:${t < 0 ? mix(MID, lo, Math.abs(t) ** 0.7) : mix(MID, hi, t ** 0.7)}"></b>`).join("");
+    const [lw, hw] = m.good === "down" ? ["mejor", "peor"] : ["menos", "más"];
+    el.innerHTML = `<p class="key-title">${esc(m.label)}: cambio vs seguir como hoy</p>
+      <div class="key-ramp">${blocks}</div>
+      <div class="key-labels"><span>${lw}</span><span>igual</span><span>${hw}</span></div>
+      <p class="key-hint">Cada círculo es una comuna. El color más fuerte es un cambio de ${unit(max)}.</p>`;
+  } else {
+    const blocks = [0, 0.17, 0.33, 0.5, 0.67, 0.83, 1].map((t) => `<b style="background:${ramp(t, m.ramp)}"></b>`).join("");
+    el.innerHTML = `<p class="key-title">${esc(m.label)} en ${S.year}</p>
+      <div class="key-ramp">${blocks}</div>
+      <div class="key-labels"><span>0</span><span>${unit(max)}</span></div>
+      <p class="key-hint">Cada círculo es una comuna. ${esc(m.hint)}</p>`;
+  }
 }
 
 function updateMap() {
@@ -324,18 +367,7 @@ function updateMap() {
   $("#mapWhen").textContent = diff && y <= 2026 ? `${when}: todavía no hay diferencia` : when;
   const m = METRICS[S.metric];
   const max = diff ? diffMax(S.metric) : metricMax(S.metric);
-  const rampEl = $("#ramp");
-  if (diff) {
-    $("#rampLow").textContent = `−${fmt(max, m.d)} ${m.unit}`;
-    $("#rampHigh").textContent = `+${fmt(max, m.d)} ${m.unit}`;
-    rampEl.innerHTML = [-1, -0.66, -0.33, 0, 0.33, 0.66, 1].map((t) => `<b style="background:${diverge(t)}"></b>`).join("");
-    rampEl.title = "Menos que como hoy, igual, más que como hoy";
-  } else {
-    $("#rampLow").textContent = "0";
-    $("#rampHigh").textContent = `${fmt(max, m.d)} ${m.unit}`;
-    rampEl.innerHTML = [0, 0.17, 0.33, 0.5, 0.67, 0.83, 1].map((t) => `<b style="background:${ramp(t)}"></b>`).join("");
-    rampEl.title = m.label;
-  }
+  renderKey(m, max, diff);
   communeLayer.clearLayers();
   S.meta.communes.forEach((c, i) => {
     const v = res.communes[S.metric].p50[i][yi(y)] * m.scale;
@@ -374,7 +406,7 @@ function updateMap() {
       const extra = res.communes.c_it.p50[i][yi(y)] - knownMW[i];
       if (extra <= 15) return;
       const mk = L.circleMarker([c.lat - (c.radius_km / 111) * 0.5, c.lon + (c.radius_km / 111) * 0.6], {
-        radius: 3 + 1.4 * Math.sqrt(extra), color: "#ffffff", weight: 1.5, fillColor: "#8a919c", fillOpacity: 0.9 });
+        radius: 3 + 1.0 * Math.sqrt(extra), color: "#ffffff", weight: 1.5, fillColor: "#8a919c", fillOpacity: 0.75 });
       mk.bindTooltip(`<b>Proyectos nuevos en ${esc(c.name)}</b><br>~${fmt(extra)} MW que aún no se anuncian`);
       dcLayer.addLayer(mk);
     });
@@ -389,7 +421,7 @@ function updateMap() {
       if (share < 0.25 || di < 0) return;
       const c = S.meta.communes[di];
       const ll = [c.lat + 0.03 * Math.sin(i * 2.4), c.lon + 0.03 * Math.cos(i * 2.4)];
-      const mk = L.circleMarker(ll, { radius: 3 + 1.4 * Math.sqrt(p.it_mw), color: COBALT_RAMP[5], weight: 2, dashArray: "4 4", fillOpacity: 0 });
+      const mk = L.circleMarker(ll, { radius: 3 + 1.0 * Math.sqrt(p.it_mw), color: DC_INK, weight: 2, dashArray: "7 4", fillOpacity: 0 });
       const from = S.meta.communes.find((x) => x.id === p.commune).name;
       mk.bindTooltip(`<b>${esc(p.name)}</b> · ${fmt(p.it_mw)} MW<br>Se muda de ${esc(from)} a ${esc(c.name)} en ${fmt(100 * share)}% de los futuros`);
       mk.on("click", () => showProject(i));
