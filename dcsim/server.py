@@ -25,7 +25,7 @@ from .insights import METRICS, hypotheses, scenario_deltas, winners_losers
 from .model import STATUS_LABELS, SYNTH_RATE_MAX, nominal_it_mw
 from .montecarlo import run_ensemble
 from .params import PARAMS
-from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS, Policy
+from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS, STATUS_QUO, Policy
 from .validation import run_validation
 
 N_PRESET = 200
@@ -76,10 +76,19 @@ def _all_results() -> dict:
     return {sid: _scenario(sid) for sid in ids}
 
 
+def _baseline(n: int) -> dict:
+    """Seguir como hoy en los mismos n futuros (semillas 0..n-1) que corre una regla propia.
+
+    Se lee del disco (python -m dcsim.precompute) o se simula una sola vez.
+    """
+    return _cached(("baseline", n), lambda: run_ensemble(STATUS_QUO, n=n))
+
+
 def _warm() -> None:
     def work():
         _cached("validation", lambda: run_validation(n=N_PRESET))
         _all_results()
+        _baseline(N_CUSTOM)
         _cached("insights", _insights)
 
     threading.Thread(target=work, daemon=True).start()
@@ -151,19 +160,57 @@ class RunRequest(BaseModel):
 _CUSTOM_MAX = 16  # reglas propias en memoria (el plan free tiene 512 MB)
 _custom: OrderedDict = OrderedDict()
 _custom_lock = threading.Lock()
+# Cifras de la portada que se comparan futuro a futuro con seguir como hoy
+COMPARE_KEYS = ["it_chile", "water_ls_rm", "conflict_rm", "litigations", "invest_lost",
+                "bill_pct"]
+_Y35 = 1  # columna de 2035 en "paired" (la otra es 2030)
+
+
+def _versus(res: dict, base: dict) -> dict:
+    """Compara una regla con seguir como hoy en los mismos futuros.
+
+    run_raw ordena las réplicas por semilla (0..n-1), así la fila i de "paired" es el mismo
+    futuro en las dos. Cuenta en cuántos futuros la regla queda mejor, peor o igual en 2035;
+    si la cifra no tiene un lado bueno (MW operando), en cuántos queda con más o con menos.
+    """
+    n = res["meta"]["n"]
+    yi = C.YEARS.index(2035)
+    compare = {}
+    for k in COMPARE_KEYS:
+        pairs = list(zip(res["paired"][k], base["paired"][k], strict=True))
+        more = sum(a[_Y35] > b[_Y35] for a, b in pairs)
+        less = sum(a[_Y35] < b[_Y35] for a, b in pairs)
+        good_up = METRICS[k][2]
+        if good_up is None:
+            c = {"more": more, "less": less}
+        else:
+            c = {"better": more, "worse": less} if good_up else {"better": less, "worse": more}
+        compare[k] = {**c, "same": n - more - less, "n": n}
+    values = {k: base["series"][k]["p50"][yi] for k in STORY_KEYS}
+    return {"baseline": {"n": base["meta"]["n"], "values": values}, "compare": compare}
 
 
 @app.post("/api/run")
 def run_custom(req: RunRequest) -> dict:
+    """Corre una regla propia y la compara con seguir como hoy en esos mismos futuros."""
     pol = Policy(**req.policy.model_dump())
-    key = tuple(sorted(pol.to_dict().items()))
+    n = N_CUSTOM
+    key = (tuple(sorted(pol.to_dict().items())), n)
     with _custom_lock:  # una simulación a la vez: la CPU es una sola
         if key not in _custom:
-            _custom[key] = run_ensemble(pol, n=N_CUSTOM, use_cache=False)
+            _custom[key] = run_ensemble(pol, n=n, use_cache=False)
             while len(_custom) > _CUSTOM_MAX:
                 _custom.popitem(last=False)
         _custom.move_to_end(key)
-        return _custom[key]
+        res = _custom[key]
+    # fuera del candado: comparar es barato y "como hoy" se lee del disco una sola vez
+    return {**res, **_versus(res, _baseline(n))}
+
+
+@app.get("/api/baseline")
+def baseline() -> dict:
+    """Seguir como hoy en los mismos futuros que corre «Tu regla»: el mapa compara contra esto."""
+    return _baseline(N_CUSTOM)
 
 
 @app.get("/api/place/site")
@@ -274,7 +321,8 @@ def story() -> dict:
 def status() -> dict:
     ready = [sid for sid in list(SCENARIOS) + list(HYPOTHESIS_SCENARIOS)
              if ("scen", sid) in _memo]
-    return {"ready": ready, "validation": "validation" in _memo, "insights": "insights" in _memo}
+    return {"ready": ready, "validation": "validation" in _memo, "insights": "insights" in _memo,
+            "baseline": ("baseline", N_CUSTOM) in _memo}
 
 
 @app.get("/")
