@@ -2,8 +2,13 @@
 
     uv run python -m dcsim.explore          # corre todo y guarda cache/explore_raw.json
 
+185 configuraciones y 15.080 simulaciones, ~3 min en 10 núcleos. cache/explore_raw.json
+(~32 MB) no se versiona: solo este comando lo rehace, y dcsim.findings lo lee para escribir
+cache/findings.json.
+
 Todas las configuraciones usan las mismas semillas (números aleatorios comunes), así las
-diferencias entre configuraciones de un mismo experimento se deben a la palanca.
+diferencias entre configuraciones de un mismo experimento se deben a la palanca. La historia
+contrafactual (E3) corre en modo libre; el resto, en modo anclado.
 """
 
 from __future__ import annotations

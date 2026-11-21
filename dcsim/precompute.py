@@ -1,9 +1,11 @@
 """Precalcula todo lo que la portada necesita y deja en cache/ solo esos archivos.
 
-    uv run python -m dcsim.precompute
+    uv run python -m dcsim.precompute       # ~40 s en 10 núcleos
 
 Correrlo después de cambiar el modelo y antes de desplegar: el servidor parte leyendo estos
-resultados en vez de simular ~2.000 futuros en una CPU chica. Los archivos se versionan en git.
+resultados en vez de simular 2.200 futuros (10 reglas × 200 y la validación) en una CPU chica.
+Los archivos se versionan en git. Si cambiaste el modelo, el orden es precompute, explore,
+findings y sensitivity.
 
 También deja "Como hoy" con los tamaños que usa "Tu regla" (60 futuros en Render free, 100 en
 standard): la regla del usuario se compara con "Como hoy" en las mismas semillas sin tener que

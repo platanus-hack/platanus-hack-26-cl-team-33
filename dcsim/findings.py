@@ -1,11 +1,15 @@
 """Hallazgos para la demo, calculados desde cache/explore_raw.json (ver explore.py).
 
-    uv run python -m dcsim.explore     # ~15.000 simulaciones, ~4 min
+    uv run python -m dcsim.explore     # 15.080 simulaciones, ~3 min en 10 núcleos
     uv run python -m dcsim.findings    # resume y guarda cache/findings.json
 
 Cada hallazgo informa en qué fracción de los futuros simulados se cumple, comparando
 réplicas con las mismas semillas. Los hallazgos de reglas que la portada muestra (paquete,
 transparencia y fondo) salen de los mismos 200 futuros que la portada, así las cifras coinciden.
+La historia alternativa de Cerrillos corre en modo libre; el resto, en modo anclado.
+
+Después, ``python -m dcsim.sensitivity`` revisa si cada hallazgo se mantiene al mover los
+parámetros fijos (lee de aquí el kicker y la cifra; FINDINGS.md, sección 4).
 """
 
 from __future__ import annotations
@@ -135,14 +139,16 @@ def build(raw: dict) -> list[dict]:
     by23 = lambda on: share((on >= 0) & (on <= C.ym("2023-12")))  # noqa: E731
     out.append({
         "id": "cerrillos", "kicker": "Historia alternativa",
-        "headline": (f"Si Google hubiera enfriado Cerrillos con aire en 2019, estaría operando "
-                     f"desde 2022 en {_f(100 * by23(on_a))}% de los futuros"),
+        "headline": (f"Si Google hubiera enfriado Cerrillos con aire en 2019, a fines de 2023 "
+                     f"estaría operando en {_f(100 * by23(on_a))}% de los futuros"),
         "body": (f"El modelo vuelve a correr 2012–2026 cambiando solo esa decisión. Con agua "
                  f"(169 L/s de un acuífero en zona de prohibición) la probabilidad de juicio es "
                  f"{_f(100 * share(A(real, 'cer_lit') > 0))}%; con aire, "
                  f"{_f(100 * share(A(air, 'cer_lit') > 0))}%. En la realidad hubo juicio, el "
                  "tribunal anuló el permiso en 2024 y Google rediseñó con aire en 2026."),
-        "cost": "La elección de enfriamiento pesa más que el tamaño del proyecto.",
+        "cost": "La elección de enfriamiento pesa más que el tamaño del proyecto. Supuesto clave: "
+                "cuánto pesa en la opinión de los vecinos el agua que ven usar; si pesa la mitad, "
+                "la diferencia casi desaparece.",
         "stat": f"{_f(100 * share(A(real, 'cer_lit') > 0))}% → "
                 f"{_f(100 * share(A(air, 'cer_lit') > 0))}%",
         "stat_label": "probabilidad de juicio: agua → aire",
@@ -183,13 +189,14 @@ def build(raw: dict) -> list[dict]:
     cost = 20_000 * np.median(E(eb, "it_rm")) / 1e6
     out.append({
         "id": "transparencia", "kicker": "Información vs plata",
-        "headline": f"Publicar el uso real de agua baja el conflicto tanto como pagar "
+        "headline": f"Publicar el uso real de agua baja el conflicto casi tanto como pagar "
                     f"US${_f(cost)} millones al año",
         "body": (f"Transparentar el consumo: {_f(100 * rt)}% hogares movilizados. Un fondo "
                  f"comunitario de US$20.000 por MW al año (≈ US${_f(cost)} millones en 2035): "
                  f"{_f(100 * rf)}%. Google Quilicura usa solo el 29% de su derecho de agua, pero "
                  "los vecinos temen el 100%."),
-        "cost": "Depende de cuánto cambia la percepción con información: es un supuesto con rango.",
+        "cost": "Depende de dos supuestos con rango: cuánta confianza recupera la información y "
+                "cuánto pesa el agua en la opinión de los vecinos.",
         "stat": f"US${_f(cost)} M", "stat_label": "al año, lo que 'vale' la transparencia",
         "action": {"type": "custom", "policy": {"transparency": True}},
         "action_label": "Simular solo transparencia",
