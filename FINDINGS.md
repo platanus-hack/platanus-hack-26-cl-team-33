@@ -4,21 +4,24 @@ Simulador híbrido (agentes + stocks y flujos) de cómo los data centers que lle
 sobre todo al corredor norte de la Región Metropolitana, afectan agua, red eléctrica,
 conflicto y beneficios en cada comuna entre 2012 y 2035. Código en `dcsim/`, interfaz en `web/`.
 
-Todos los números de este documento salen del código de este branch:
+Todos los números de este documento salen del código de este repositorio:
 
 | Qué | Cómo se calcula | Simulaciones |
 |---|---|---|
 | Validación | `dcsim/validation.py`, modo `free` (el modelo genera la historia 2012–2026 sin conocerla) | 200 |
-| Hallazgos | `dcsim/explore.py` + `dcsim/findings.py`, modo `anchored` (historia real hasta nov-2026, luego proyección) | 15.080 (185 configuraciones) |
+| Hallazgos | `dcsim/explore.py` + `dcsim/findings.py`, modo `anchored` (historia real hasta nov-2026, luego proyección); la historia alternativa de Cerrillos usa el modo `free` | 15.080 (185 configuraciones) y los 200 futuros por regla de la portada |
 | Hipótesis del informe | `dcsim/insights.py`, escenarios predefinidos de `dcsim/policy.py` | 200 por escenario |
+| Qué tan firmes son | `dcsim/sensitivity.py`: cada parámetro fijo en sus extremos y todos sorteados juntos (sección 4) | 76.500 |
 
 Las comparaciones usan números aleatorios comunes: cada configuración corre con las mismas
 semillas y los proyectos conocidos sortean de un flujo propio, así la diferencia entre dos
 configuraciones se debe a la regla que cambia (también al cambiar la demanda: los proyectos
 nuevos de una demanda baja son un subconjunto de los de una alta). Los valores son medianas;
 los porcentajes "de los futuros" son la fracción de pares de réplicas donde se cumple la
-afirmación. En cada futuro se sortean 13 de los 41 supuestos, entre ellos el efecto de la
-evaluación conjunta y de la transparencia, que no tienen dato chileno.
+afirmación. El modelo tiene 53 parámetros. En cada futuro se sortean 13, entre ellos el efecto
+de la evaluación conjunta y de la transparencia, que no tienen dato chileno. Los otros 40
+quedan en su valor central; la sección 4 los lleva uno a uno a sus extremos y luego los sortea
+todos juntos.
 
 ## 1. El modelo reproduce lo observado (14/14 chequeos)
 
@@ -50,8 +53,15 @@ Límites de estos chequeos:
   hace 3 o más años opera), que acierta 91%. El chequeo pasa solo si el modelo la supera.
 - Las comunas con oposición no son una prueba ciega: los barrios sintéticos se ubicaron donde
   hay viviendas junto a sitios conocidos (Valle Grande, La Pincoya, Lonquén).
+- Los 2 juicios se reproducen en total, no proyecto por proyecto: en modo libre el modelo casi
+  nunca demanda a AWS Huechuraba, que sí fue a tribunales.
 
-## 2. Hallazgos (15.080 simulaciones)
+## 2. Hallazgos
+
+Paquete y transparencia usan los 200 futuros por regla de la portada; permisos y punto de
+quiebre, barridos de 120 futuros; Cerrillos, Lampa y la comuna más afectada, 200 futuros de la
+batería (Cerrillos en modo libre). La sección 4 revisa si cada uno resiste cambios en los
+supuestos.
 
 ### No hay que elegir: 3 reglas mejoran a la vez agua, conflicto, juicios e inversión en 84% de los futuros
 Enfriamiento por aire + fondo comunitario + incentivo al norte, frente a las reglas de hoy
@@ -75,22 +85,26 @@ proyectos que esperan red generan rechazo sin dejar beneficios.
 
 ### Historia alternativa: con aire en Cerrillos, la probabilidad de juicio baja de 83% a 2%
 Se vuelve a correr 2012–2026 cambiando solo la decisión de enfriamiento de Google Cerrillos
-(169 L/s de un acuífero en zona de prohibición). Con aire, el proyecto estaría operando
-desde 2022 en 93% de los futuros. En la realidad hubo juicio, el tribunal anuló el permiso
+(169 L/s de un acuífero en zona de prohibición). Con aire, a fines de 2023 el proyecto
+estaría operando en 93% de los futuros. En la realidad hubo juicio, el tribunal anuló el permiso
 en 2024 y Google rediseñó con aire en 2026. La elección de enfriamiento pesa más que el
 tamaño del proyecto.
+*Supuestos clave:* usar agua de un acuífero en zona de prohibición da fundamento legal a un
+juicio (`lit_w_water`) y aumenta el rechazo de los vecinos (`op_w_water`); la sección 4
+muestra que el hallazgo no se sostiene si el peso del agua en la opinión baja a la mitad.
 
 ### Dónde importa más que cuánto: alejar un solo proyecto de las casas baja 60% el conflicto de toda Lampa
 Campo de Datos Lampa (100 MW) está a menos de 50 m de Valle Grande. El mismo proyecto en la
 periferia de la comuna baja los hogares movilizados de 26% a 11% y los hogares a menos de
 500 m de un DC grande de 3.968 a 1.701 (2035). Se cumple en 91% de los futuros.
 
-### Información vs plata: publicar el uso real de agua baja el conflicto tanto como pagar US$38 millones al año
+### Información vs plata: publicar el uso real de agua baja el conflicto casi tanto como pagar US$38 millones al año
 Transparentar el consumo: −30% hogares movilizados. Fondo comunitario de US$20.000 por MW al
-año (≈ US$38 millones en 2035): −31%. Google Quilicura usa solo el 29% de su derecho de agua,
-pero los vecinos temen el 100%.
+año (≈ US$38 millones en 2035): −31% (2035, 200 futuros). Google Quilicura usa solo el 29% de
+su derecho de agua, pero los vecinos temen el 100%.
 *Supuesto:* depende de cuánto recupera la confianza la información (entre 0,05 y 0,25,
-sorteado en cada futuro).
+sorteado en cada futuro) y de cuánto pesa el agua en la opinión. Si ese peso baja a la mitad,
+queda en el límite: la transparencia logra justo dos tercios de la baja del fondo (sección 4).
 
 ### No hay destino escrito: 6 comunas pueden terminar como la más afectada en 2035
 En 200 futuros con las mismas reglas, la comuna con más hogares movilizados cambia según el
@@ -113,19 +127,88 @@ anticiparla.
 Los barridos de una palanca (permisos, demanda) usan 120 futuros y los escenarios 200, por eso
 la RM de 2030 "como hoy" aparece como 836 MW en la sección 2 y 829 MW en esta tabla.
 
+## 4. Qué tan firmes son los hallazgos
+
+De los 53 parámetros, 13 se sortean en cada futuro. Los otros 40 quedan en su valor central;
+`dcsim/params.py` marca 26 como supuestos, 8 como datos y 6 como calibrados.
+`dcsim/sensitivity.py` los mueve de dos formas. Uno a la vez: cada uno va al extremo bajo y
+luego al alto de su rango (80 ajustes de 100 futuros), con las mismas semillas y los mismos 13
+sorteos de una corrida normal. Todos juntos: 400 futuros en que, además de los 13 de siempre,
+se sortean los 40 dentro de su rango. En cada ajuste se rehace la cuenta de cada hallazgo como
+en `dcsim/findings.py` y se aplica el criterio de la tabla. Son 76.500 simulaciones (933 s en
+10 núcleos); el resultado queda en `cache/sensitivity.json`.
+
+Un extremo puede dejar al modelo lejos de lo observado. Por eso cada ajuste también corre
+2012–2026 en modo libre y revisa que siga reproduciendo la historia: mediana de juicios a fines
+de 2026 entre 1 y 4 (hubo 2) y, a menos de 25% del dato, el consumo de los data centers de la
+RM a fines de 2025 (260 MW), los MW esperando red en 2026 (1.420) y la capacidad instalada en
+Santiago a mediados de 2026 (311 MW). Los 80 ajustes pasan esa regla.
+
+El valor central se calcula con 100 futuros, así que puede diferir un poco de la sección 2.
+
+| Hallazgo | Qué se mide (se mantiene si…) | Supuestos centrales | Uno a la vez: rango | Se mantiene | Todos juntos (400 futuros) |
+|---|---|---|---|---|---|
+| No hay que elegir | Futuros en que aire + fondo + norte es igual o mejor en las seis cifras (al menos 50%) | 84% | 73% a 86% | 80 de 80 | 79% |
+| El cuello de botella no es el permiso | Cambio de los MW en la RM en 2030 con permisos 4 veces más rápidos (menos de +5%) | +0,38% | 0% a +2,15% | 80 de 80 | +0,69% |
+| Punto de quiebre | Cuántas veces más crecen los juicios que los MW operando con el doble de proyectos (más de 1) | 2,15 (juicios ×2,56, MW +18,9%) | 1,80 a 2,29 | 80 de 80 | 1,96 |
+| Historia alternativa (Cerrillos) | Probabilidad de juicio con agua → con aire (baja al menos 25 puntos y queda en la mitad o menos) | 83% → 1% | con agua 8% a 90%; con aire 1% a 6% | 79 de 80 | 69% → 3,5% |
+| Dónde importa más que cuánto | Baja del conflicto de Lampa en 2035 al alejar Campo de Datos Lampa (25% o más) | 61,8% | 52,6% a 75,0% | 80 de 80 | 57,8% |
+| Información vs plata | Cambio del conflicto de la RM en 2035 con transparencia y con fondo (las dos bajan y la transparencia logra al menos dos tercios de la baja del fondo) | −28,1% y −30,4% (cociente 0,92) | cociente 0,67 a 1,14 | 80 de 80 | −28,9% y −29,2% (0,99) |
+
+Con todos los parámetros sorteados juntos, los seis hallazgos se mantienen. En ese sorteo, 196
+de los 400 futuros reproducen la historia cada uno por su cuenta (con los supuestos centrales,
+70 de 100); con solo esos 196, los seis también se mantienen.
+
+**Lo que no se sostiene.** La historia alternativa de Cerrillos falla en 1 de los 80 ajustes:
+si el peso del agua que los vecinos ven usar en su opinión (`op_w_water`) baja a la mitad
+(0,6 en vez de 1,2), la probabilidad de juicio con agua cae de 83% a 8% y con aire queda en 1%.
+Con ese peso, el juicio es raro aun con agua y enfriar con aire casi no cambia nada. El ajuste
+que le sigue en debilidad, un rechazo de partida más bajo (`op_intercept` = −2,5), deja 49% con
+agua y 1% con aire, y cumple. En el mismo ajuste de `op_w_water`, información vs plata queda en
+el límite: la transparencia baja el conflicto 19,4% y el fondo 29,0%, un cociente de 0,67
+frente al mínimo de dos tercios.
+
+Ese ajuste pasa la regla de historia, pero la regla cuenta juicios, no a qué proyecto se
+demanda. Con él, el juicio real contra Google Cerrillos (2020) pasa a ser un evento de 8%
+(83% con el peso central), y 25% de sus historias 2012–2026 no tienen ningún juicio (3% con el
+peso central), cuando hubo 2. Ese juicio es unas 10 veces más probable con el peso central que
+con la mitad, aunque la regla de historia no lo incorpora.
+
+Límites de este análisis:
+- Con 100 futuros por ajuste hay ruido de muestreo: el error estándar de las probabilidades de
+  Cerrillos es de unos 4 puntos.
+- Uno a la vez no ve interacciones entre parámetros; solo el sorteo conjunto las mezcla.
+- `outages_per_year` cambia cuántos números aleatorios usa el flujo del entorno, así que en sus
+  dos ajustes las horas de apagón no conservan los números aleatorios comunes. Solo afecta las
+  horas de diésel y el NOx, que no entran en ningún hallazgo.
+- Quedan supuestos de comportamiento escritos como números en el código, fuera de este
+  análisis: los pesos con que un proyecto elige comuna, los componentes de las molestias, las
+  distancias de 0,7 y 1,5 km de los núcleos de cercanía, la diversidad de los hogares (sorteada
+  una vez al cargar el modelo), cuánto sube la desconfianza con un juicio o una anulación, y las
+  probabilidades de decisión de la evaluación por zona.
+- La regla de historia cuenta juicios, no a qué proyectos se demanda (ver AWS Huechuraba en
+  la sección 1).
+
 ## Cómo reproducir
 
+Tiempos medidos en un computador de 10 núcleos.
+
 ```bash
-uv sync
-uv run pytest                                  # 28 tests
-uv run python -m dcsim.precompute              # ensambles de la portada (cache/, ~40 s)
+uv sync --frozen
+uv run pytest -q                               # 40 tests, ~9 s
 uv run python -m dcsim.validation              # tabla de la sección 1
-uv run python -m dcsim.explore                 # ~15.000 simulaciones, ~3 min
+uv run python -m dcsim.precompute              # portada y "como hoy" de "Tu regla", ~40 s
+uv run python -m dcsim.explore                 # 15.080 simulaciones, ~3 min
 uv run python -m dcsim.findings                # sección 2, escribe cache/findings.json
+uv run python -m dcsim.sensitivity             # sección 4, 76.500 simulaciones, ~16 min
 uv run uvicorn dcsim.server:app --port 8000    # interfaz en http://localhost:8000
 ```
 
-`cache/findings.json` y los ensambles de la portada van versionados, así el servidor parte sin
-simular. Llevan la huella del código: si cambias el modelo, vuelve a correr `precompute`,
-`explore` y `findings` (un test falla si `findings.json` quedó desactualizado). El resto de
-`cache/` (`explore_raw.json`, ~32 MB) se regenera solo.
+Van versionados `cache/findings.json`, `cache/sensitivity.json` y los ensambles de la portada,
+así el servidor parte sin simular. `precompute` también deja, versionado, "como hoy" con 60 y
+100 futuros: las semillas con que se compara "Tu regla" (60 en Render, 100 en local). Todos
+llevan la huella del código: si cambias `model.py`, `catalog.py`, `params.py`, `policy.py` o
+`montecarlo.py`, corre `precompute`, `explore`, `findings` y `sensitivity`, en ese orden (dos
+tests fallan si `findings.json` o `sensitivity.json` quedaron desactualizados).
+`cache/explore_raw.json` (~32 MB) no se versiona: solo lo rehace `explore`, y `findings` lo
+necesita.
