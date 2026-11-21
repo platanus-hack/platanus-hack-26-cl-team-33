@@ -1,0 +1,15 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+# El servidor parte leyendo los resultados precalculados de cache/ (python -m dcsim.precompute).
+services:
+  - type: web
+    name: aterriza
+    runtime: python
+    plan: free
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    startCommand: .venv/bin/uvicorn dcsim.server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/status
+    envVars:
+      - key: DCSIM_WORKERS      # un solo proceso de simulación: la instancia gratuita tiene 512 MB
+        value: "1"
+      - key: DCSIM_N_CUSTOM     # "Tu regla" corre 60 futuros para responder rápido en una CPU chica
+        value: "60"

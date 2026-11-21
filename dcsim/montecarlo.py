@@ -54,7 +54,8 @@ def run_raw(policy: Policy, n: int = 200, mode: str = "anchored", seed0: int = 0
             workers: int | None = None):
     """Devuelve los registros apilados de n réplicas: dict clave -> array (n, ...)."""
     seeds = list(range(seed0, seed0 + n))
-    workers = workers or min(8, os.cpu_count() or 2)
+    # DCSIM_WORKERS limita los procesos en servidores chicos (Render free: 512 MB)
+    workers = workers or int(os.environ.get("DCSIM_WORKERS", "0")) or min(8, os.cpu_count() or 2)
     chunks = [seeds[i::workers] for i in range(workers) if seeds[i::workers]]
     tasks = [(policy.to_dict(), ch, mode) for ch in chunks]
     if workers == 1 or n <= 8:

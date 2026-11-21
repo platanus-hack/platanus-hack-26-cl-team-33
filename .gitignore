@@ -6,3 +6,6 @@ __pycache__/
 cache/*
 !cache/findings.json
 .taste-skill/
+# resultados precalculados que usa el servidor (python -m dcsim.precompute)
+!cache/anchored_200_*.json
+!cache/free_200_*.json

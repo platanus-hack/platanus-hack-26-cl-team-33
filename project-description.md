@@ -1,1 +1,49 @@
-Put your project description in markdown here. It will render under your project voting page. See as reference [Platanus Hack 26: Buenos Aires voting page](https://hack.platan.us/26-ar/vote).
+# Aterriza
+
+**Simula el impacto de los data centers en tu comuna.**
+
+Chile aprueba los data centers de a uno, y desde el DS 17 casi siempre sin participación ciudadana. Pero se suman en la misma red eléctrica, el mismo acuífero y las mismas comunas: Quilicura, Lampa, Cerrillos, Tiltil. En Santiago ya hay 1.420 MW de proyectos esperando conexión a una red saturada.
+
+Aterriza pone todos los proyectos reales en un solo modelo y proyecta qué le pasa a la gente hasta 2035: agua, electricidad, vecinos movilizados, juicios e inversión, comuna por comuna.
+
+## Qué puedes hacer
+
+- **Elegir una regla** y ver cómo cambian las cifras de 2035 y el mapa. Las reglas son: seguir como hoy, permisos más rápidos, solo enfriamiento por aire, evaluar por zona con los vecinos, incentivo para irse al norte, o las tres que más ayudan juntas.
+- **Armar tu propia regla** palanca por palanca y simularla en segundos.
+- **Mover el año** de 2012 a 2035 y ver cómo se llena cada comuna, o cuánto cambia respecto de seguir como hoy.
+- **Tocar una comuna o un proyecto** para ver su detalle, su historia y su probabilidad de terminar operando, en tribunales o esperando red.
+
+## Lo que encontramos en 15.080 simulaciones
+
+- **El freno es la red, no el permiso.** Con permisos cuatro veces más rápidos, Santiago tendría solo 2% más data centers en 2030. Los proyectos aprobados igual esperan conexión eléctrica.
+- **No hay que elegir entre inversión y comunidad.** Enfriamiento por aire, un fondo comunitario y un incentivo al norte mejoran las seis cifras a la vez en 92% de los futuros. El costo es la cuenta de la luz: sube 3,7% en vez de 3,1%.
+- **El agua decide el juicio.** Si Google hubiera enfriado Cerrillos con aire en 2019, la probabilidad de juicio bajaba de 79% a 3%, y estaría operando desde 2022.
+- **Dónde importa más que cuánto.** Alejar un solo proyecto de las casas baja 56% el conflicto de toda Lampa.
+- **Más proyectos, más espera.** Si llegan el doble de proyectos, se conecta solo 19% más, pero los juicios se multiplican por 2,6.
+
+## ¿Le podemos creer?
+
+Al modelo le dimos solo cuándo se anunció cada proyecto real; él decidió cuándo se aprobaba, se construía, se iba a tribunales o quedaba esperando red. Reproduce **14 de 14 datos reales** de 2012 a 2026:
+
+- el consumo eléctrico de los data centers de Santiago: 90 MW en 2021 y 260 MW en 2025;
+- el agua de Google en Quilicura: 458 millones de litros en 2024;
+- los 1.420 MW en lista de espera del CEN;
+- los 2 juicios ambientales;
+- las 4 comunas con vecinos organizados.
+
+Cada chequeo dice si fue validación (el modelo nunca vio ese dato) o calibración (un parámetro se ajustó con él).
+
+## Cómo funciona
+
+Un modelo de agentes con stocks y flujos que avanza mes a mes desde 2012:
+
+- **62 proyectos reales** (33 con nombre público) y unos 5 nuevos al año, que eligen comuna, enfriamiento y cuánto diésel declarar.
+- **El SEA**, que manda cada proyecto al SEIA o a pertinencia según el umbral de 1.000 t del DS 17, y **la fila de conexión del CEN**, nodo por nodo.
+- **2.300 hogares sintéticos.** Su oposición crece con la cercanía, el diésel, el miedo por el agua y la acumulación, y baja con empleo y beneficios. Se contagia dentro de la comuna y lleva proyectos a tribunales.
+- **200 futuros por regla**, con números aleatorios comunes. Se reporta la mediana y el rango del 90%.
+
+Hecho con Python (NumPy, FastAPI) y HTML/JS con Leaflet. Los datos vienen de un informe de investigación de noviembre de 2026, el CEN, la DGA, el SEA y el Censo 2017. Las ecuaciones, los supuestos y lo que no sabemos están a la vista en la sección "Detalle técnico".
+
+## Equipo 33 · Track Simulations
+
+Anish Samtani, Alejandro Lorca Acevedo y Andrés Faúndez Ortega.

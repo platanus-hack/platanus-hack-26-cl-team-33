@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -25,7 +26,7 @@ from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS, policy_from_dict
 from .validation import run_validation
 
 N_PRESET = 200
-N_CUSTOM = 100
+N_CUSTOM = int(os.environ.get("DCSIM_N_CUSTOM", "100"))  # futuros por regla propia
 WEB = Path(__file__).resolve().parent.parent / "web"
 
 @asynccontextmanager
