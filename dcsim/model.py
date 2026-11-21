@@ -128,8 +128,10 @@ class Run:
     """Una réplica de la simulación."""
 
     def __init__(self, policy: Policy = STATUS_QUO, seed: int = 0, mode: str = "anchored",
-                 params: dict | None = None):
+                 params: dict | None = None, overrides: dict | None = None):
         self.policy = policy
+        # Contrafactuales: {id_proyecto: {"cooling": ..., "water_right_ls": ..., "exclude": True}}
+        self.overrides = overrides or {}
         self.mode = mode
         self.seed = seed
         v = params if params is not None else sample_values(np.random.default_rng([seed, 1]))
@@ -142,7 +144,8 @@ class Run:
     def _init_projects(self, rng_p, rng_s):
         v, pol = self.v, self.policy
         # Llegadas sintéticas 2027+ (mismas para todas las políticas con igual demanda)
-        rate = {"baja": 2.0, "base": 5.0, "alta": 10.0}[pol.demand]
+        rate = pol.demand_rate if pol.demand_rate is not None else {
+            "baja": 2.0, "base": 5.0, "alta": 10.0}[pol.demand]
         synth = []
         for year in range(2027, C.YEAR_END + 1):
             for _ in range(rng_s.poisson(rate)):
@@ -172,18 +175,27 @@ class Run:
         self.known = np.zeros(N, dtype=bool)
         self.known[:NK] = True
         for i, p in enumerate(C.PROJECTS):
+            ov = self.overrides.get(p.id, {})
             self.it[i] = p.it_mw
-            self.cool[i] = COOL_CODE[p.cooling]
+            self.cool[i] = COOL_CODE[ov.get("cooling", p.cooling)]
             self.commune[i] = C.COMMUNE_IDX[p.commune]
             self.site[i] = i
+            if p.extra.get("request_mw"):
+                # El CEN informa la potencia de conexión pedida (total), no la potencia TI
+                self.it[i] = p.it_mw / (v["pue_air"] * v["peak_pue_ratio"])
             self.capex[i] = p.capex_musd or p.it_mw * v["capex_musd_per_mw"]
             self.fuel[i] = p.fuel_t if p.fuel_t is not None else -1.0
-            self.water_plan[i] = p.water_right_ls or 0.0
+            self.water_plan[i] = ov.get("water_right_ls", p.water_right_ls) or 0.0
             self.hv[i] = p.hv_line
             self.near_homes[i] = p.dist_homes_m is not None and p.dist_homes_m <= 300
+            if ov.get("generic_site"):  # contrafactual: el mismo proyecto en la periferia
+                self.site[i] = NK + self.commune[i]
+                self.near_homes[i] = False
             self.announce[i] = C.ym(p.announce)
             ps = p.extra.get("permit_start")
             self.permit_start[i] = C.ym(ps) if ps else self.announce[i]
+            if ov.get("exclude"):  # el proyecto nunca se anuncia
+                self.announce[i] = self.permit_start[i] = 10**6
             if p.operator == "Google":  # hiperescala propia: carga alta y estable
                 self.lfmax[i] = 0.92
         for j, (month, mw, cool) in enumerate(synth):
@@ -294,6 +306,8 @@ class Run:
         for i, p in enumerate(C.PROJECTS):
             a = self.announce[i]
             rs = p.real_status
+            if p.id in self.overrides:  # contrafactual: no se fuerza su historia
+                continue
             if p.pre_existing:
                 continue
             if rs == "operando":
@@ -315,16 +329,20 @@ class Run:
             elif rs is None and a <= C.NOW:
                 f[i] = {"no_lit_before": C.NOW, "no_move_before": C.NOW}
         # Historia documentada con litigios
-        cer = C.PROJECT_IDX["google_cerrillos"]
-        f[cer] = {"script": [("litigate", C.ym("2020-02"), True),
-                             ("approve", C.ym("2020-02"), ("SEIA", False)),
-                             ("verdict", C.ym("2024-02"), True),
-                             ("redesign", C.ym("2026-07"), "pertinencia"),
-                             ("approve", C.ym("2026-10"), ("pertinencia", True))]}
-        aws = C.PROJECT_IDX["aws_huechuraba"]
-        f[aws] = {"script": [("litigate", C.ym("2024-07"), True),
-                             ("approve", C.ym("2024-07"), ("SEIA", False)),
-                             ("verdict", C.ym("2026-04"), False)], "force_grid": True}
+        scripts = {
+            "google_cerrillos": {"script": [("litigate", C.ym("2020-02"), True),
+                                            ("approve", C.ym("2020-02"), ("SEIA", False)),
+                                            ("verdict", C.ym("2024-02"), True),
+                                            ("redesign", C.ym("2026-07"), "pertinencia"),
+                                            ("approve", C.ym("2026-10"), ("pertinencia", True))]},
+            "aws_huechuraba": {"script": [("litigate", C.ym("2024-07"), True),
+                                          ("approve", C.ym("2024-07"), ("SEIA", False)),
+                                          ("verdict", C.ym("2026-04"), False)],
+                               "force_grid": True},
+        }
+        for pid, spec in scripts.items():
+            if pid not in self.overrides:
+                f[C.PROJECT_IDX[pid]] = spec
         for i, spec in f.items():
             for kind, t, arg in spec.get("script", []):
                 self.events[t].append(("script_" + kind, i, arg))
@@ -921,9 +939,9 @@ class Run:
         r["google_water_ml"][yi] = y_flat["google_m3"] / 1000
         r["google_power_mw"][yi] = y_flat["google_mwh"] / 8760
         waiting = (self.grid == 1) & (st != ST_CANCEL) & (st != ST_NONE)
-        r["waitlist_mw"][yi] = self.it[waiting].sum()
+        r["waitlist_mw"][yi] = self.req[waiting].sum()  # MW de conexión pedidos, como el CEN
         r["waitlist_n"][yi] = waiting.sum()
-        r["c_waitlist"][:, yi] = np.bincount(com, weights=np.where(waiting, self.it, 0),
+        r["c_waitlist"][:, yi] = np.bincount(com, weights=np.where(waiting, self.req, 0),
                                              minlength=NC)
         year = C.YEAR0 + yi
         sys_twh = v["system_twh_2025"] * (1 + v["system_growth"]) ** (year - 2025)

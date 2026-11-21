@@ -28,6 +28,7 @@ class Policy:
     # Contexto (no es política, es incertidumbre del futuro)
     demand: str = "base"  # "baja" | "base" | "alta": llegada de nuevos proyectos 2027+
     climate: str = "base"  # "moderado" | "base" | "severo": recarga del acuífero
+    demand_rate: float | None = None  # proyectos nuevos por año (reemplaza a `demand`)
 
     def to_dict(self) -> dict:
         return asdict(self)

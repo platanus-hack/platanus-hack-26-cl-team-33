@@ -41,6 +41,7 @@ async function init() {
   renderProjects();
   setupYearSeg();
   initMap();
+  api("/api/findings").then(renderFindings).catch(() => {});
   api("/api/validation").then((v) => { S.validation = v; renderValidation(); }).catch(showErr("#validation"));
   await selectScenario("status_quo", false);
   // Precarga las demás reglas (cacheadas en el servidor) para fijar la escala de colores del mapa
@@ -66,6 +67,50 @@ function refreshTheme() {
   setBaseLayer();
   if (S.validation) renderValidation();
   if (S.results[S.selected]) renderResults();
+}
+
+// ------------------------------------------------------------ hallazgos
+function renderFindings(list) {
+  if (!list || !list.length) return;
+  $("#hallazgos").hidden = false;
+  $("#findingsLead").textContent = `Corrimos ${fmt(list[0].n_sims)} simulaciones: 128 combinaciones de reglas, ` +
+    "barridos de cada palanca, historias alternativas y proyectos quitados o movidos. Esto es lo que más sorprende, " +
+    "y en qué fracción de los futuros se cumple.";
+  $("#findings").innerHTML = list.map((f, i) => `<div class="card finding ${i === 0 ? "lead-card" : ""}">
+    <div class="kicker">${esc(f.kicker)}</div>
+    <div class="stat"><b>${esc(f.stat)}</b><span>${esc(f.stat_label)}</span></div>
+    <div class="headline">${esc(f.headline)}</div>
+    <div class="body">${esc(f.body)}</div>
+    <div class="cost">${esc(f.cost)}</div>
+    <button class="linkish" data-i="${i}">${esc(f.action_label)} →</button>
+  </div>`).join("");
+  $("#findings").querySelectorAll("[data-i]").forEach((btn) => btn.addEventListener("click", () => runFindingAction(list[Number(btn.dataset.i)].action)));
+  if (location.hash === "#hallazgos") $("#hallazgos").scrollIntoView();
+}
+async function runFindingAction(a) {
+  if (a.type === "scenario") {
+    if (a.metric) { S.mapMetric = a.metric; $("#metricSel").value = a.metric; }
+    await selectScenario(a.id, true);
+    return;
+  }
+  if (a.type === "custom") {
+    Object.assign(customPolicy, { fuel_threshold_t: 1000, cumulative: false, water_cap_ls: 60, air_cooling_rm: false,
+      permit_speed: 1, north_incentive: 0, community_fund_usd_mw: 0, transparency: false, demand: "base", climate: "base" }, a.policy);
+    renderLevers();
+    $("#customBox").open = true;
+    await runCustom();
+    return;
+  }
+  if (a.type === "project") {
+    await selectScenario("status_quo", false);
+    const i = S.meta.projects.findIndex((p) => p.id === a.id);
+    S.mapYear = a.year;
+    updateMap();
+    $("#map").scrollIntoView({ behavior: "smooth", block: "center" });
+    const p = S.meta.projects[i];
+    map.setView([p.lat, p.lon], 13);
+    showProject(i, a.year);
+  }
 }
 
 // ------------------------------------------------------------ 1. validación
@@ -236,7 +281,7 @@ function renderLevers() {
     const out = $(`#out-${l.key}`);
     if (out) out.textContent = `${fmt(val, l.step < 1 ? 1 : 0)} ${l.unit}`;
   }));
-  $("#runCustom").addEventListener("click", runCustom);
+  $("#runCustom").onclick = runCustom;
 }
 async function runCustom() {
   const btn = $("#runCustom");

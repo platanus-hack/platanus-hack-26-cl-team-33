@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import threading
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -146,6 +147,13 @@ def communes(sid: str, year: int) -> list[dict]:
     if year not in C.YEARS:
         raise HTTPException(400, "Año fuera de rango")
     return winners_losers(_scenario(sid), year)
+
+
+@app.get("/api/findings")
+def findings() -> list:
+    """Hallazgos precalculados (uv run python -m dcsim.explore && python -m dcsim.findings)."""
+    path = Path(__file__).resolve().parent.parent / "cache" / "findings.json"
+    return json.loads(path.read_text()) if path.exists() else []
 
 
 @app.get("/api/status")
