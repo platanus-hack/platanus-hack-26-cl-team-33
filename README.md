@@ -53,7 +53,7 @@ con su método, en [FINDINGS.md](FINDINGS.md).
   movilizados, 33% menos juicios, 55% menos agua y 12% más inversión en 2035. La cuenta de la luz
   sube 1,8% en vez de 2,0% (supuesto: la demanda que se va a Antofagasta no presiona la tarifa).
 - **El agua decide el juicio.** Si Google hubiera enfriado Cerrillos con aire en 2019, la
-  probabilidad de juicio bajaba de 83% a 2%. Es el hallazgo más frágil: depende de cuánto pesa
+  probabilidad de juicio habría bajado de 83% a 2%. Es el hallazgo más frágil: depende de cuánto pesa
   el agua en la opinión de los vecinos (ver abajo).
 - **Más proyectos, más espera.** Con el doble de proyectos se conecta solo 19% más, pero los
   juicios se multiplican por 2,3.
@@ -61,22 +61,26 @@ con su método, en [FINDINGS.md](FINDINGS.md).
 ## ¿Le podemos creer?
 
 - **Reproduce el pasado sin verlo.** En modo libre el modelo recibe cada proyecto (tamaño, lugar,
-  enfriamiento, fecha de anuncio) y genera solo 2012–2026. Pasa 14 de 14 chequeos: 7 de
-  validación (no se ajustó a ese dato) y 7 de calibración. Ejemplo: electricidad de los data
+  enfriamiento, fecha de anuncio) y genera solo 2012–2026. Pasa 14 de 14 chequeos: 6 de
+  validación (no se ajustó a ese dato) y 8 de calibración. Ejemplo: electricidad de los data
   centers de la RM a fines de 2025, 260 MW observados y 254 MW simulados (banda 5–95: 185–338).
-- **Le gana a una regla trivial.** El chequeo del estado de los 54 proyectos conocidos a
-  noviembre de 2026 solo pasa si el modelo supera a la regla "lista del CEN espera; anunciado hace
-  3 o más años opera", que acierta 91%. El modelo acierta 96%.
-- **Límites a la vista.** Los 1.420 MW en espera se cumplen casi por construcción, y las comunas
-  con oposición no son una prueba ciega. 29 de los 62 proyectos no tienen nombre público: cuadran
-  el inventario y la lista del CEN. Los efectos de la evaluación conjunta, la transparencia y la
+- **Le gana a una regla trivial.** El chequeo del estado de cada proyecto a noviembre de 2026
+  solo pasa si el modelo supera a la regla "lista del CEN espera; anunciado hace 3 o más años
+  opera". En los 25 proyectos con nombre público el modelo acierta 92% y la regla 84%; contando
+  también los 29 sin nombre, 96% frente a 91%.
+- **Límites a la vista.** Los 1.420 MW en espera se cumplen casi por construcción, la potencia
+  de Google sale de lo que Google declara y las comunas con oposición no son una prueba ciega. De
+  los 62 proyectos, 33 tienen nombre público y 29 son supuestos que cuadran el inventario y la
+  lista del CEN. Los efectos de la evaluación conjunta, la transparencia y la
   tarifa no tienen dato chileno: son supuestos con rango. De los 53 parámetros, 13 se sortean en
   cada futuro y los otros 40 se prueban en sus extremos.
 - **Qué tan firmes son los hallazgos.** `dcsim/sensitivity.py` (76.500 simulaciones) lleva cada
-  uno de los 40 parámetros fijos a sus dos extremos y luego los sortea todos juntos. 5 de los 6
-  hallazgos se mantienen en los 80 ajustes; el de Cerrillos, en 79: si el agua pesa la mitad en
+  uno de los 40 parámetros fijos a sus dos extremos y luego los sortea todos juntos. Prueba los 6
+  hallazgos que comparan reglas o historias (el séptimo, «No hay destino escrito», describe
+  cuánto varían los futuros y no tiene un criterio de sí o no). 5 se mantienen en los 80 ajustes; el de Cerrillos, en 79: si el agua pesa la mitad en
   la opinión de los vecinos, la probabilidad de juicio con agua baja de 83% a 8% y deja de
-  cumplirse. Con todo sorteado a la vez se mantienen los 6. Detalle en la sección 4 de
+  cumplirse. Con todo sorteado a la vez se mantienen los 6. 8 de los 40 parámetros no mueven
+  ninguna de estas cifras, así que sus ajustes se mantienen por construcción. Detalle en la sección 4 de
   [FINDINGS.md](FINDINGS.md).
 
 ## Cómo correrlo
@@ -86,13 +90,13 @@ Necesitas uv. Tiempos medidos en un computador de 10 núcleos.
 ```bash
 uv sync --frozen                              # las versiones de uv.lock, igual que la CI
 uv run uvicorn dcsim.server:app --port 8000   # la página en http://localhost:8000
-uv run pytest -q                              # 40 tests, ~9 s
+uv run pytest -q                              # 48 tests, ~9 s
 uv run ruff check .                           # estilo, igual que la CI
 uv run python -m dcsim.validation             # los 14 chequeos
 # si cambias el modelo, en este orden:
 uv run python -m dcsim.precompute             # portada y "como hoy" de "Tu regla", ~40 s
 uv run python -m dcsim.explore                # 15.080 simulaciones, ~3 min
-uv run python -m dcsim.findings               # resume la batería en cache/findings.json
+uv run python -m dcsim.findings               # resume la salida de explore en cache/findings.json
 uv run python -m dcsim.sensitivity            # 76.500 simulaciones, ~16 min
 ```
 
@@ -115,7 +119,7 @@ mismo código y la misma máquina, `precompute` y `findings` rehacen byte a byte
 | `dcsim/params.py` | 53 parámetros con valor central, rango, fuente y tipo (dato, calibrado o supuesto); 13 se sortean en cada futuro. |
 | `dcsim/policy.py` | Las palancas (`Policy`) y las 8 reglas predefinidas. |
 | `dcsim/montecarlo.py` | N futuros en paralelo, mediana y percentiles 5–95, caché en disco. |
-| `dcsim/validation.py` | Hindcast: los 14 chequeos. |
+| `dcsim/validation.py` | Prueba con el pasado (hindcast): los 14 chequeos. |
 | `dcsim/insights.py` | Cada regla contra "Como hoy" y 6 hipótesis del informe. |
 | `dcsim/explore.py` | Batería de 185 configuraciones: factorial de 7 palancas, barridos, contrafactuales. |
 | `dcsim/findings.py` | Resume la batería en 7 hallazgos (`cache/findings.json`). |
@@ -124,7 +128,7 @@ mismo código y la misma máquina, `precompute` y `findings` rehacen byte a byte
 | `dcsim/precompute.py` | Rehace los resultados de la portada y "como hoy" con 60 y 100 futuros para "Tu regla"; borra los obsoletos. |
 | `dcsim/server.py` | API (FastAPI) y archivos estáticos. |
 | `web/` | La página: `index.html`, `story.js`, `place.js`, `story.css` e `img/`. |
-| `tests/` | Determinismo, palancas, hindcast, invariantes del motor y de la API, "Tu regla" en las mismas semillas, sensibilidad, coloca un data center. |
+| `tests/` | Determinismo, palancas, prueba con el pasado, invariantes del motor y de la API, "Tu regla" en las mismas semillas, sensibilidad, coloca un data center. |
 | `cache/` | Versionados: `findings.json`, `sensitivity.json`, los `*_200_*.json` de la portada y `anchored_60_*`/`anchored_100_*` ("como hoy" para "Tu regla"), así el servidor no simula en una CPU chica. `explore_raw.json` (~32 MB) no: solo lo rehace `explore`. |
 | `render.yaml` | El servicio en Render. |
 | `pyproject.toml`, `uv.lock` | Dependencias: NumPy, FastAPI, uvicorn; pytest, ruff y httpx para desarrollo. |
@@ -138,11 +142,11 @@ mismo código y la misma máquina, `precompute` y `findings` rehacen byte a byte
 | `GET /api/story` | Lo que usa la portada: 6 reglas con sus cifras de 2035, chequeos, hallazgos y un resumen de la sensibilidad (`sensitivity`). |
 | `GET /api/meta` | Comunas, proyectos, nodos, reglas, parámetros y datos observados. |
 | `GET /api/scenario/{sid}` | Los 200 futuros resumidos de una regla predefinida. |
-| `POST /api/run` | Simula `{"policy": {...}}` (campos de `Policy`; 422 si no valen) en `DCSIM_N_CUSTOM` futuros, semillas 0 a N−1. Suma `baseline` (`n` y medianas de 2035 de seguir como hoy en esas semillas) y `compare`: por cifra, en cuántos futuros la regla queda mejor, peor o igual (`better`, `worse`, `same`, `n`); para los MW operando, con más o con menos (`more`, `less`). |
+| `POST /api/run` | Simula `{"policy": {...}}` (campos de `Policy`; 422 si no valen) en `DCSIM_N_CUSTOM` futuros, semillas 0 a N−1 (422 también si sobran campos o llega un NaN). Suma `baseline` (`n` y medianas de 2035 de seguir como hoy en esas semillas) y `compare`: por cifra, en cuántos futuros la regla queda mejor, peor o igual (`better`, `worse`, `same`, `n`); para los MW operando, con más o con menos (`more`, `less`). |
 | `GET /api/baseline` | Seguir como hoy en esas mismas semillas, completo (el mapa de "Tu regla" compara contra esto). |
 | `GET /api/sensitivity` | El análisis de sensibilidad completo (`cache/sensitivity.json`). |
 | `GET /api/place/site?lat=&lon=` | Comuna, nodo, acuífero y hogares alrededor de un punto, sin simular. |
-| `POST /api/place` | Los futuros con y sin el data center del usuario (400 si el sitio no sirve). |
+| `POST /api/place` | Los futuros con y sin el data center del usuario (400 si el sitio o la regla no sirven; 422 si sobran campos). |
 | `GET /api/validation` | Los 14 chequeos con sus bandas y fuentes. |
 | `GET /api/insights` | Las 6 hipótesis y el efecto de cada regla en 2030 y 2035. |
 | `GET /api/communes/{sid}/{year}` | Balance por comuna en un año. |
@@ -161,6 +165,7 @@ y "Coloca un data center" sí simulan.
 | `DCSIM_WORKERS` | 1 | hasta 8 | Procesos que simulan; 1 porque el plan free tiene 512 MB. |
 | `DCSIM_N_CUSTOM` | 60 | 100 | Futuros de "Tu regla" y de su comparación con seguir como hoy. |
 | `DCSIM_N_PLACE` | 20 | 40 | Futuros de "Coloca un data center", cada uno con y sin él. |
+| `UV_COMPILE_BYTECODE` | 1 | — | Compila el bytecode al construir: el plan free parte de la imagen tras dormir y así no recompila al despertar. |
 
 ## Fuentes de datos
 
@@ -176,7 +181,9 @@ técnicos. Las cifras de prensa no son fuentes primarias y las coordenadas son a
 - **Sábado 21-nov-2026, 01:07 a 02:51 (hora de Chile).** El repo parte de la plantilla del
   hackathon. El equipo construye primero BedFlow Chile, un simulador del paso de pacientes de
   urgencia a camas de hospital. Sus PR #4 (motor), #5 (API, tests y CI) y #6 (interfaz) se
-  fusionan en `main`.
+  fusionan en `main`. Los 5 commits del motor de BedFlow (`a59fa4d` a `8d4e1a3`) aparecen con
+  fecha 22-nov porque el reloj de ese computador iba adelantado: GitHub los fusionó en el PR #4 el
+  21-nov a las 02:38.
 - **Cerca de las 05:00, cambio de tema.** `795fde9` (05:04) vuelve el repo a la plantilla, y en
   `main` un commit de reinicio, `3e7dfd4` (05:18), borra todos los archivos.
 - **Desde las 05:30.** `5c62800` es el primer commit del simulador de data centers y ya trae el
@@ -184,7 +191,9 @@ técnicos. Las cifras de prensa no son fuentes primarias y las coordenadas son a
   de simulaciones, hallazgos, despliegue, correcciones de una revisión, "Coloca un data center"
   y el análisis de sensibilidad.
 - **Integración.** Mientras `main` estuvo vacía, el trabajo siguió en las ramas `person-a/*`;
-  después se integró a `main` por PR.
+  después se integró a `main` por PR. Las ramas `judge/*` de los merges son las correcciones de
+  una revisión hecha con la rúbrica del jurado (sensibilidad, "Tu regla" en las mismas semillas,
+  README y CI).
 
 ## Créditos
 

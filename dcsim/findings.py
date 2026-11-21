@@ -22,10 +22,10 @@ import numpy as np
 
 from . import catalog as C
 from .explore import OUT as RAW
-from .montecarlo import _code_hash, run_ensemble
+from .montecarlo import CACHE_DIR, _code_hash, run_ensemble
 from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS
 
-OUT = RAW.replace("explore_raw.json", "findings.json")
+OUT = str(CACHE_DIR / "findings.json")
 
 
 def _f(x: float, nd: int = 0) -> str:
@@ -72,7 +72,7 @@ def build(raw: dict) -> list[dict]:
         "headline": (f"3 reglas mejoran a la vez agua, conflicto, juicios e inversión en "
                      f"{_f(100 * share(ok))}% de los futuros"),
         "body": (f"Enfriamiento por aire + fondo comunitario + incentivo al norte: "
-                 f"{_f(100 * rel['it_chile_2035'], 0)}% más data centers operando, "
+                 f"{_f(100 * rel['it_chile_2035'], 0)}% más MW de data centers operando, "
                  f"{_f(100 * rel['invest_realized_2035'])}% más inversión, "
                  f"{_f(-100 * rel['invest_lost_2035'])}% menos inversión perdida, "
                  f"{_f(-100 * rel['conflict_rm_2035'])}% menos hogares movilizados, "
@@ -97,8 +97,8 @@ def build(raw: dict) -> list[dict]:
     nd30 = 1 if abs(100 * r30) < 1.5 else 0  # "+0,5%", no "+0%"
     out.append({
         "id": "permisos", "kicker": "El cuello de botella no es el permiso",
-        "headline": (f"Permisos 4 veces más rápidos: solo {_f(100 * r30, nd30)}% más data centers "
-                     "en Santiago al 2030"),
+        "headline": (f"Permisos 4 veces más rápidos: solo {_f(100 * r30, nd30)}% más MW de data "
+                     "centers en Santiago al 2030"),
         "body": (f"Con permisos 75% más cortos, la RM pasa de {_f(med(n, 'it_rm_2030'))} a "
                  f"{_f(med(f, 'it_rm_2030'))} MW en 2030, y el plazo medio entre anuncio y "
                  "operación baja apenas "
@@ -145,7 +145,8 @@ def build(raw: dict) -> list[dict]:
                  f"(169 L/s de un acuífero en zona de prohibición) la probabilidad de juicio es "
                  f"{_f(100 * share(A(real, 'cer_lit') > 0))}%; con aire, "
                  f"{_f(100 * share(A(air, 'cer_lit') > 0))}%. En la realidad hubo juicio, el "
-                 "tribunal anuló el permiso en 2024 y Google rediseñó con aire en 2026."),
+                 "tribunal anuló parcialmente el permiso en 2024 y Google rediseñó con aire en "
+                 "2026."),
         "cost": "La elección de enfriamiento pesa más que el tamaño del proyecto. Supuesto clave: "
                 "cuánto pesa en la opinión de los vecinos el agua que ven usar; si pesa la mitad, "
                 "la diferencia casi desaparece.",
@@ -228,6 +229,9 @@ def build(raw: dict) -> list[dict]:
 
 
 def main():
+    if not os.path.exists(RAW):
+        raise SystemExit("Falta cache/explore_raw.json: corre antes "
+                         "'uv run python -m dcsim.explore' (~3 min).")
     with open(RAW) as fh:
         raw = json.load(fh)
     findings = build(raw)

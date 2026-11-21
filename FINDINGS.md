@@ -27,7 +27,7 @@ todos juntos.
 
 Sin ver la historia, el modelo genera 2012–2026 a partir de los proyectos reales (tamaño,
 lugar, enfriamiento y fecha de anuncio) y se compara con datos observados. Banda = percentiles
-5–95. 7 chequeos son validación (el modelo no se ajustó a ese dato) y 7 son calibración.
+5–95. 6 chequeos son validación (el modelo no se ajustó a ese dato) y 8 son calibración.
 
 | Chequeo | Tipo | Observado | Modelo (mediana [banda]) |
 |---|---|---|---|
@@ -37,20 +37,25 @@ lugar, enfriamiento y fecha de anuncio) y se compara con datos observados. Banda
 | Capacidad instalada en Santiago, mediados 2026 (MW TI) | calibración | 311 | 326 [251–401] |
 | Data centers operando, mediados 2026 | calibración | 36–39 | 37 [35–39] |
 | Agua de Google Quilicura, 2024 (ML) | calibración | 458 | 484 [407–565] |
-| Potencia media de Google Quilicura, 2024 (MW) | validación | 30 | 31,8 [27,4–35,3] |
+| Potencia media de Google Quilicura, 2024 (MW) | calibración | 30 | 31,8 [27,4–35,3] |
 | Parte del consumo de Quilicura que usan los DC (%) | calibración | 62 | 60 [53–64] |
 | MW esperando conexión a la red, 2026 | calibración | 1.420 | 1.420 [1.192–1.447] |
 | Proyectos en lista de espera, 2026 | calibración | 6 | 6 [6–7] |
 | Litigios ambientales contra DC, 2012–2026 | calibración | 2 | 2 [1–4] |
 | Parte del consumo eléctrico nacional (%) | validación | 2–3 | 2,5 [1,9–3,2] |
 | Comunas con oposición organizada | validación | Cerrillos, Quilicura, Huechuraba, Lampa | las mismas 4 en el top 4 |
-| Estado de cada proyecto conocido a nov-2026 | validación | 54 proyectos | 96% acierta (92% de los con nombre) |
+| Estado de cada proyecto conocido a nov-2026 | validación | 54 proyectos | acierta 96% (92% en los 25 con nombre) |
 
 Límites de estos chequeos:
 - Los 1.420 MW en espera se cumplen casi por construcción: la capacidad libre de cada nodo se
   ajustó a ese dato y dos proyectos supuestos completan los 6 proyectos del CEN.
 - El estado de cada proyecto se compara con una regla trivial (lista del CEN espera; anunciado
-  hace 3 o más años opera), que acierta 91%. El chequeo pasa solo si el modelo la supera.
+  hace 3 o más años opera), que acierta 91%. El chequeo pasa solo si el modelo la supera. En los
+  25 proyectos con nombre público, que son la prueba más limpia, el modelo acierta 92% y la regla
+  84%; los otros 29 son supuestos que cuadran el inventario y la lista del CEN.
+- La potencia de Google Quilicura no es una prueba ciega: su tamaño (2 × 16 MW) sale de los 30 MW
+  que declara Google y su factor de carga alto (0,92) es un supuesto. Por eso cuenta como
+  calibración.
 - Las comunas con oposición no son una prueba ciega: los barrios sintéticos se ubicaron donde
   hay viviendas junto a sitios conocidos (Valle Grande, La Pincoya, Lonquén).
 - Los 2 juicios se reproducen en total, no proyecto por proyecto: en modo libre el modelo casi
@@ -65,7 +70,7 @@ supuestos.
 
 ### No hay que elegir: 3 reglas mejoran a la vez agua, conflicto, juicios e inversión en 84% de los futuros
 Enfriamiento por aire + fondo comunitario + incentivo al norte, frente a las reglas de hoy
-(2035, 200 futuros, los mismos de la portada): 13% más data centers operando, 12% más
+(2035, 200 futuros, los mismos de la portada): 13% más MW de data centers operando, 12% más
 inversión, 29% menos inversión perdida, 52% menos hogares movilizados, 33% menos juicios y
 55% menos agua.
 *La cuenta de la luz* no sube más: 1,8% en vez de 2,0%, porque parte de la demanda se va a
@@ -86,7 +91,7 @@ proyectos que esperan red generan rechazo sin dejar beneficios.
 ### Historia alternativa: con aire en Cerrillos, la probabilidad de juicio baja de 83% a 2%
 Se vuelve a correr 2012–2026 cambiando solo la decisión de enfriamiento de Google Cerrillos
 (169 L/s de un acuífero en zona de prohibición). Con aire, a fines de 2023 el proyecto
-estaría operando en 93% de los futuros. En la realidad hubo juicio, el tribunal anuló el permiso
+estaría operando en 93% de los futuros. En la realidad hubo juicio, el tribunal anuló parcialmente el permiso
 en 2024 y Google rediseñó con aire en 2026. La elección de enfriamiento pesa más que el
 tamaño del proyecto.
 *Supuestos clave:* usar agua de un acuífero en zona de prohibición da fundamento legal a un
@@ -131,6 +136,8 @@ la RM de 2030 "como hoy" aparece como 836 MW en la sección 2 y 829 MW en esta t
 
 De los 53 parámetros, 13 se sortean en cada futuro. Los otros 40 quedan en su valor central;
 `dcsim/params.py` marca 26 como supuestos, 8 como datos y 6 como calibrados.
+Se prueban los 6 hallazgos que comparan reglas o historias; el séptimo, «No hay destino
+escrito», describe cuánto varían los futuros y no tiene un criterio de sí o no.
 `dcsim/sensitivity.py` los mueve de dos formas. Uno a la vez: cada uno va al extremo bajo y
 luego al alto de su rango (80 ajustes de 100 futuros), con las mismas semillas y los mismos 13
 sorteos de una corrida normal. Todos juntos: 400 futuros en que, además de los 13 de siempre,
@@ -150,14 +157,20 @@ El valor central se calcula con 100 futuros, así que puede diferir un poco de l
 |---|---|---|---|---|---|
 | No hay que elegir | Futuros en que aire + fondo + norte es igual o mejor en las seis cifras (al menos 50%) | 84% | 73% a 86% | 80 de 80 | 79% |
 | El cuello de botella no es el permiso | Cambio de los MW en la RM en 2030 con permisos 4 veces más rápidos (menos de +5%) | +0,38% | 0% a +2,15% | 80 de 80 | +0,69% |
-| Punto de quiebre | Cuántas veces más crecen los juicios que los MW operando con el doble de proyectos (más de 1) | 2,15 (juicios ×2,56, MW +18,9%) | 1,80 a 2,29 | 80 de 80 | 1,96 |
+| Punto de quiebre | Cuántas veces más crecen los juicios que los MW operando con el doble de proyectos (más de 1) | 2,15 | 1,80 a 2,29 | 80 de 80 | 1,96 |
 | Historia alternativa (Cerrillos) | Probabilidad de juicio con agua → con aire (baja al menos 25 puntos y queda en la mitad o menos) | 83% → 1% | con agua 8% a 90%; con aire 1% a 6% | 79 de 80 | 69% → 3,5% |
 | Dónde importa más que cuánto | Baja del conflicto de Lampa en 2035 al alejar Campo de Datos Lampa (25% o más) | 61,8% | 52,6% a 75,0% | 80 de 80 | 57,8% |
 | Información vs plata | Cambio del conflicto de la RM en 2035 con transparencia y con fondo (las dos bajan y la transparencia logra al menos dos tercios de la baja del fondo) | −28,1% y −30,4% (cociente 0,92) | cociente 0,67 a 1,14 | 80 de 80 | −28,9% y −29,2% (0,99) |
 
 Con todos los parámetros sorteados juntos, los seis hallazgos se mantienen. En ese sorteo, 196
 de los 400 futuros reproducen la historia cada uno por su cuenta (con los supuestos centrales,
-70 de 100); con solo esos 196, los seis también se mantienen.
+70 de 100); con solo esos 196, los seis también se mantienen (estas cifras las imprime
+`uv run python -m dcsim.sensitivity` al terminar).
+
+8 de los 40 parámetros no mueven ninguna de estas seis cifras: el consumo y el crecimiento
+eléctrico del país, el costo de red, el factor de verano del agua, la recarga del acuífero, el
+NOx, las horas de prueba del diésel y los apagones. Mueven otras (la cuenta de la luz, el
+acuífero, el diésel), y sus 16 ajustes se mantienen por construcción.
 
 **Lo que no se sostiene.** La historia alternativa de Cerrillos falla en 1 de los 80 ajustes:
 si el peso del agua que los vecinos ven usar en su opinión (`op_w_water`) baja a la mitad
@@ -170,22 +183,24 @@ frente al mínimo de dos tercios.
 
 Ese ajuste pasa la regla de historia, pero la regla cuenta juicios, no a qué proyecto se
 demanda. Con él, el juicio real contra Google Cerrillos (2020) pasa a ser un evento de 8%
-(83% con el peso central), y 25% de sus historias 2012–2026 no tienen ningún juicio (3% con el
-peso central), cuando hubo 2. Ese juicio es unas 10 veces más probable con el peso central que
-con la mitad, aunque la regla de historia no lo incorpora.
+(83% con el peso central): ese juicio es unas 10 veces más probable con el peso central que con
+la mitad, aunque la regla de historia no lo incorpora.
 
 Límites de este análisis:
-- Con 100 futuros por ajuste hay ruido de muestreo: el error estándar de las probabilidades de
-  Cerrillos es de unos 4 puntos.
+- Con 100 futuros por ajuste hay ruido de muestreo: el error estándar de una probabilidad es de
+  hasta 5 puntos (±10 con 95% de confianza); en Cerrillos, de unos 4.
 - Uno a la vez no ve interacciones entre parámetros; solo el sorteo conjunto las mezcla.
 - `outages_per_year` cambia cuántos números aleatorios usa el flujo del entorno, así que en sus
   dos ajustes las horas de apagón no conservan los números aleatorios comunes. Solo afecta las
   horas de diésel y el NOx, que no entran en ningún hallazgo.
 - Quedan supuestos de comportamiento escritos como números en el código, fuera de este
-  análisis: los pesos con que un proyecto elige comuna, los componentes de las molestias, las
-  distancias de 0,7 y 1,5 km de los núcleos de cercanía, la diversidad de los hogares (sorteada
-  una vez al cargar el modelo), cuánto sube la desconfianza con un juicio o una anulación, y las
-  probabilidades de decisión de la evaluación por zona.
+  análisis, entre otros: los pesos con que un proyecto elige comuna, los componentes de las
+  molestias, las distancias de 0,7 y 1,5 km de los núcleos de cercanía, la diversidad de los
+  hogares (sorteada una vez al cargar el modelo), cuánto sube la desconfianza con un juicio, una
+  anulación o una aprobación por SEIA (0,03), cuánto pesa el agua percibida según haya acuífero
+  (×1,5 o ×0,5), la opinión inicial (0,12), el tope de 90% a la probabilidad de juicio, la
+  probabilidad de rediseñar con aire tras una anulación (70%), la de desistir tras 36 meses de
+  espera y las probabilidades de decisión de la evaluación por zona.
 - La regla de historia cuenta juicios, no a qué proyectos se demanda (ver AWS Huechuraba en
   la sección 1).
 
@@ -195,7 +210,7 @@ Tiempos medidos en un computador de 10 núcleos.
 
 ```bash
 uv sync --frozen
-uv run pytest -q                               # 40 tests, ~9 s
+uv run pytest -q                               # 48 tests, ~9 s
 uv run python -m dcsim.validation              # tabla de la sección 1
 uv run python -m dcsim.precompute              # portada y "como hoy" de "Tu regla", ~40 s
 uv run python -m dcsim.explore                 # 15.080 simulaciones, ~3 min
