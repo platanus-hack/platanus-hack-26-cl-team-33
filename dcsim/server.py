@@ -12,7 +12,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -40,7 +40,7 @@ app = FastAPI(title="Simulador de data centers en Chile", lifespan=_lifespan)
 @app.middleware("http")
 async def _no_cache_static(request, call_next):
     resp = await call_next(request)
-    if request.url.path in ("/", "/explorar") or request.url.path.startswith("/static"):
+    if request.url.path == "/" or request.url.path.startswith("/static"):
         resp.headers["Cache-Control"] = "no-cache"
     return resp
 _lock = threading.Lock()
@@ -198,8 +198,9 @@ def index() -> FileResponse:
 
 
 @app.get("/explorar")
-def explorar() -> FileResponse:
-    return FileResponse(WEB / "explorar.html")
+def explorar() -> RedirectResponse:
+    """La vista experta se fusionó en la portada; los enlaces antiguos llevan al simulador."""
+    return RedirectResponse("/#simular")
 
 
 app.mount("/static", StaticFiles(directory=WEB), name="static")

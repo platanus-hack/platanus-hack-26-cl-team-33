@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="/static/story.css">
 </head>
 <body>
@@ -26,42 +27,89 @@
           <a href="#simular">Simular</a>
           <a href="#hallazgos">Hallazgos</a>
           <a href="#prueba">¿Funciona?</a>
-          <a href="/explorar">Modelo completo</a>
+          <a href="#detalle">Detalle técnico</a>
         </nav>
         <h1 class="display"><span class="line"><span>La nube</span></span><span class="line"><span>aterriza</span></span></h1>
         <figure class="hero-photo">
           <img src="/static/img/quilicura-y-cerro-renca.jpg" width="1920" height="724" alt="Quilicura y el cerro Renca, con techos industriales al pie del cerro" fetchpriority="high">
           <div class="accent-block">
-            <b data-fill="waitlist">1.420 MW</b>
+            <b>1.420 MW</b>
             <span>de data centers esperan conexión a la red en Santiago</span>
           </div>
         </figure>
       </div>
     </header>
 
-    <!-- La simulación: lo único que se toca -->
+    <!-- El simulador: reglas, mapa y cifras en un solo lugar -->
     <section class="sim" id="simular" aria-labelledby="sim-title">
       <div class="sim-head" data-rise>
         <h2 id="sim-title" class="head"><span class="soft">Elige una regla.</span> Mira qué cambia.</h2>
-        <a class="btn" id="simMap" href="/explorar?s=status_quo">Ver en el mapa</a>
+        <button class="btn" type="button" data-tab="custom">Arma tu propia regla</button>
       </div>
       <div class="sim-body">
         <div class="tabs" role="tablist" aria-label="Reglas" id="tabs" data-rise>
           <button role="tab" aria-selected="true" data-id="status_quo"><b>Como hoy</b><span>uno por uno</span></button>
-          <button role="tab" aria-selected="false" data-id="mesa"><b>Permisos rápidos</b><span>la mitad del tiempo</span></button>
-          <button role="tab" aria-selected="false" data-id="aire"><b>Solo aire</b><span>sin agua para enfriar</span></button>
-          <button role="tab" aria-selected="false" data-id="acumulativa"><b>Evaluar en conjunto</b><span>por zona, con vecinos</span></button>
-          <button role="tab" aria-selected="false" data-id="norte"><b>Ir al norte</b><span>incentivo en Antofagasta</span></button>
-          <button role="tab" aria-selected="false" data-id="paquete"><b>Las tres juntas</b><span>aire, fondo y norte</span></button>
+          <button role="tab" aria-selected="false" tabindex="-1" data-id="mesa"><b>Permisos rápidos</b><span>la mitad del tiempo</span></button>
+          <button role="tab" aria-selected="false" tabindex="-1" data-id="aire"><b>Solo aire</b><span>sin agua para enfriar</span></button>
+          <button role="tab" aria-selected="false" tabindex="-1" data-id="acumulativa"><b>Evaluar en conjunto</b><span>por zona, con vecinos</span></button>
+          <button role="tab" aria-selected="false" tabindex="-1" data-id="norte"><b>Ir al norte</b><span>incentivo en Antofagasta</span></button>
+          <button role="tab" aria-selected="false" tabindex="-1" data-id="paquete"><b>Las tres juntas</b><span>aire, fondo y norte</span></button>
+          <button role="tab" aria-selected="false" tabindex="-1" data-id="custom"><b>Tu regla</b><span>elige cada palanca</span></button>
         </div>
-        <div class="bands" role="tabpanel" aria-live="polite" data-rise>
+
+        <div class="map-card" data-ui data-rise>
+          <div class="map-top">
+            <div class="seg" role="group" aria-label="Color de las comunas">
+              <button type="button" data-metric="c_conflict" aria-pressed="true">Vecinos movilizados</button>
+              <button type="button" data-metric="c_water_ls" aria-pressed="false">Agua</button>
+              <button type="button" data-metric="c_it" aria-pressed="false">Data centers</button>
+            </div>
+            <span class="map-when" id="mapWhen">Futuro simulado</span>
+          </div>
+          <div id="map" role="img" aria-label="Mapa de Santiago con los data centers y las comunas"></div>
+          <div class="map-info" id="mapInfo" hidden></div>
+          <div class="map-bottom">
+            <button class="play" id="play" type="button" aria-label="Reproducir de 2012 a 2035">Ver desde 2012</button>
+            <label class="year"><span id="yearLabel">2035</span><input type="range" id="year" min="2012" max="2035" value="2035" aria-label="Año en el mapa"></label>
+          </div>
+          <ul class="legend" id="legend">
+            <li><i class="mk op"></i>Operando</li>
+            <li><i class="mk bd"></i>En construcción</li>
+            <li><i class="mk pm"></i>En trámite</li>
+            <li><i class="mk wt"></i>Esperando red</li>
+            <li><i class="mk lt"></i>En tribunales</li>
+            <li><i class="mk nw"></i>Nuevos, aún sin anunciar</li>
+            <li class="legend-ramp"><span id="rampLow">0</span><i class="ramp"></i><span id="rampHigh"></span></li>
+          </ul>
+        </div>
+
+        <div class="numbers" role="tabpanel" aria-live="polite" data-rise>
           <p class="rule-summary" id="ruleSummary">Cada proyecto se evalúa solo. Casi todos pasan por pertinencia, sin participación ciudadana.</p>
-          <div class="band" data-k="it_chile"><div><b>Data centers operando en Chile</b><span class="note" data-note>Cargando…</span></div><span class="val">…</span><span class="delta"></span></div>
-          <div class="band" data-k="water_ls_rm"><div><b>Agua que usan en Santiago</b><span class="note" data-note></span></div><span class="val">…</span><span class="delta"></span></div>
-          <div class="band" data-k="conflict_rm"><div><b>Vecinos movilizados en contra</b><span class="note">de los hogares en comunas con data centers</span></div><span class="val">…</span><span class="delta"></span></div>
-          <div class="band" data-k="litigations"><div><b>Juicios contra proyectos</b><span class="note">acumulados desde 2012</span></div><span class="val">…</span><span class="delta"></span></div>
-          <div class="band" data-k="invest_lost"><div><b>Inversión que se va de Chile</b><span class="note">proyectos que no encuentran red y desisten</span></div><span class="val">…</span><span class="delta"></span></div>
-          <div class="band" data-k="bill_pct"><div><b>Alza de la cuenta de la luz</b><span class="note">respecto de 2025; es una hipótesis con rango amplio</span></div><span class="val">…</span><span class="delta"></span></div>
+          <form class="custom" id="custom" hidden>
+            <label>Umbral de diésel para entrar al SEIA
+              <select name="fuel_threshold_t"><option value="1000" selected>1.000 t, como hoy</option><option value="80">80 t, antes del DS 17</option></select></label>
+            <label>Duración de los permisos
+              <select name="permit_speed"><option value="1" selected>Como hoy</option><option value="0.5">La mitad</option><option value="1.5">50% más</option></select></label>
+            <label>Incentivo para instalarse en Antofagasta
+              <select name="north_incentive"><option value="0" selected>Ninguno</option><option value="0.6">Medio</option><option value="1">Fuerte</option></select></label>
+            <label>Fondo comunitario por MW al año
+              <select name="community_fund_usd_mw"><option value="0" selected>Sin fondo</option><option value="10000">US$10.000</option><option value="20000">US$20.000</option><option value="40000">US$40.000</option></select></label>
+            <label>Proyectos nuevos al año desde 2027
+              <select name="demand"><option value="baja">2</option><option value="base" selected>5</option><option value="alta">10, boom de IA</option></select></label>
+            <label class="check"><input type="checkbox" name="cumulative"> Evaluar en conjunto por zona, con vecinos</label>
+            <label class="check"><input type="checkbox" name="air_cooling_rm"> Prohibir enfriar con agua en Santiago</label>
+            <label class="check"><input type="checkbox" name="transparency"> Publicar el uso real de agua y energía</label>
+            <button class="btn" type="submit" id="runCustom">Simular mi regla</button>
+            <p class="custom-note" id="customNote">Corre 100 futuros, unos 5 segundos.</p>
+          </form>
+          <div class="bands" id="bands">
+            <div class="band" data-k="it_chile" data-metric="c_it"><div><b>Data centers operando en Chile</b><span class="note" data-note>Cargando…</span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-k="water_ls_rm" data-metric="c_water_ls"><div><b>Agua que usan en Santiago</b><span class="note" data-note></span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-k="conflict_rm" data-metric="c_conflict"><div><b>Vecinos movilizados en contra</b><span class="note">de los hogares en comunas con data centers</span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-k="litigations"><div><b>Juicios contra proyectos</b><span class="note">acumulados desde 2012</span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-k="invest_lost"><div><b>Inversión perdida</b><span class="note">proyectos que no encuentran red y se van de Chile</span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-k="bill_pct"><div><b>Alza de la cuenta de la luz</b><span class="note">respecto de 2025; hipótesis con rango amplio</span></div><span class="val">…</span><span class="delta"></span></div>
+          </div>
           <p class="sim-foot">Cifras para 2035: valor típico de 200 futuros simulados por regla. La historia hasta noviembre de 2026 es la real.</p>
         </div>
       </div>
@@ -73,7 +121,7 @@
         <div class="field">
           <h2 class="ch-title">El freno es la red, no el permiso</h2>
           <img class="ch-photo" src="/static/img/torres-charrua-1.jpg" width="1920" height="3413" alt="Torres de alta tensión junto a un camino seco en Charrúa" loading="lazy">
-          <p class="ch-text">Con permisos cuatro veces más rápidos, Santiago tendría apenas <b data-f="permisos">+2%</b> más data centers en 2030. Los proyectos aprobados igual esperan conexión eléctrica.</p>
+          <p class="ch-text">Con permisos cuatro veces más rápidos, Santiago tendría apenas <b data-f="permisos">2%</b> más data centers en 2030. Los proyectos aprobados igual esperan conexión eléctrica.</p>
           <a class="ch-link" href="#simular" data-tab="mesa">Probar permisos rápidos</a>
         </div>
       </article>
@@ -82,7 +130,7 @@
           <h2 class="ch-title">El agua decide el juicio</h2>
           <img class="ch-photo" src="/static/img/canal-ortuzano-estacion-central-y-cerrillos-santiago.jpg" width="1920" height="1280" alt="Canal Ortuzano entre Estación Central y Cerrillos" loading="lazy">
           <p class="ch-text">Si Google hubiera enfriado Cerrillos con aire en 2019, la probabilidad de juicio pasaba de <b data-f="cerrillos">79% a 3%</b> y estaría operando desde 2022.</p>
-          <a class="ch-link" href="/explorar?p=google_cerrillos&amp;y=2024">Ver Cerrillos en el mapa</a>
+          <a class="ch-link" href="#simular" data-project="google_cerrillos" data-year="2024">Ver Cerrillos en el mapa</a>
         </div>
       </article>
       <article class="chapter" style="--field:#131417">
@@ -90,7 +138,7 @@
           <h2 class="ch-title">Más proyectos, más espera</h2>
           <img class="ch-photo" src="/static/img/rear-of-rack-at-nersc-data-center.jpg" width="1920" height="2889" alt="Parte trasera de un rack de servidores con cables" loading="lazy">
           <p class="ch-text">Si llegan el doble de proyectos, se conecta solo 19% más, pero los juicios se multiplican por <b data-f="boom">2,6</b>. La red no crece al ritmo de los anuncios.</p>
-          <a class="ch-link" href="/explorar#hallazgos">Ver los siete hallazgos</a>
+          <a class="ch-link" href="#mas-hallazgos" data-open="mas-hallazgos">Ver los otros hallazgos</a>
         </div>
       </article>
     </section>
@@ -110,7 +158,39 @@
           <tr><td></td><td>Comunas con vecinos organizados</td><td data-label="Real">4</td><td data-label="Modelo">las mismas 4</td><td>Informe, nov-2026</td></tr>
         </tbody>
       </table>
-      <a class="text-link" href="/explorar#creer" data-rise>Ver los catorce chequeos y cuáles fueron calibrados</a>
+      <a class="text-link" href="#chequeos" data-open="chequeos" data-rise>Ver los catorce chequeos y cuáles fueron calibrados</a>
+    </section>
+
+    <!-- Detalle técnico, cerrado por defecto -->
+    <section class="detail" id="detalle" aria-labelledby="detail-title">
+      <div class="detail-head" data-rise>
+        <h2 id="detail-title" class="head">Detalle técnico</h2>
+        <p class="detail-lead">Para quien quiera revisar el modelo por dentro: los hallazgos restantes, los catorce chequeos, cómo funciona, cada supuesto con su fuente y cada proyecto usado. Cada parte se abre por separado.</p>
+      </div>
+      <details id="mas-hallazgos" data-rise>
+        <summary>Los otros cuatro hallazgos</summary>
+        <div class="detail-body more-findings" id="moreFindings"></div>
+      </details>
+      <details id="chequeos" data-rise>
+        <summary>Los catorce chequeos con datos reales</summary>
+        <div class="detail-body" id="checksBody"></div>
+      </details>
+      <details id="como" data-rise>
+        <summary>Cómo funciona el modelo</summary>
+        <div class="detail-body prose">
+          <p>Cada mes, desde 2012, cada proyecto real decide cuánto diésel declarar (y con eso si entra al SEIA o pasa por pertinencia), pide conexión al CEN y espera, se muda o desiste si no hay espacio en la red. Con permiso y red, construye y empieza a usar electricidad y agua.</p>
+          <p>Unos 2.300 hogares sintéticos sienten el ruido, el diésel, el miedo por el agua y la acumulación de proyectos, y reciben empleo, patentes y fondos. Su oposición se contagia en la comuna, puede llevar un proyecto a tribunales y cambia dónde se instalan los siguientes. Por eso el resultado no sale de multiplicar columnas en una planilla.</p>
+          <p>Cada regla se simula 200 veces con los mismos números aleatorios, así la diferencia entre reglas es efecto de la regla y no del azar.</p>
+        </div>
+      </details>
+      <details id="supuestos" data-rise>
+        <summary>Supuestos, con su rango y fuente</summary>
+        <div class="detail-body" id="paramsBody"></div>
+      </details>
+      <details id="inventario" data-rise>
+        <summary>Los proyectos usados</summary>
+        <div class="detail-body" id="projectsBody"></div>
+      </details>
     </section>
 
     <!-- Cierre -->
@@ -121,8 +201,8 @@
         <img src="/static/img/smog-sobre-santiago-de-chile.jpg" width="1920" height="2560" alt="Santiago entre edificios, con la cordillera al fondo" loading="lazy">
       </div>
       <div class="close-field">
-        <h2 id="close-title" class="close-statement" data-rise>Explora <a href="/explorar">el modelo completo</a>.</h2>
-        <p class="close-text" data-rise>Cada comuna, cada proyecto y cada supuesto, con su fuente y su rango de incertidumbre.</p>
+        <h2 id="close-title" class="close-statement" data-rise>Ahora <a href="#simular" data-tab="custom">arma tu propia regla</a>.</h2>
+        <p class="close-text" data-rise>Elige cada palanca y mira, comuna por comuna, qué le pasa a la gente hasta 2035.</p>
         <p class="close-small" data-rise>15.080 simulaciones, 200 futuros por regla, 14 de 14 chequeos con datos reales.<br>Hecho en 36 horas en Platanus Hack 26, Santiago.</p>
       </div>
     </section>
@@ -131,13 +211,14 @@
   <footer class="footer">
     <div class="foot-cols">
       <div><b>Aterriza</b><span>Simulador del efecto acumulado de los data centers en las comunas de Chile, 2012 a 2035.</span></div>
-      <div><b>Secciones</b><a href="#simular">Simular una regla</a><a href="#hallazgos">Hallazgos</a><a href="#prueba">La prueba</a><a href="/explorar">Modelo completo</a></div>
+      <div><b>Secciones</b><a href="#simular">Simular una regla</a><a href="#hallazgos">Hallazgos</a><a href="#prueba">La prueba</a><a href="#detalle">Detalle técnico</a></div>
       <div><b>Datos</b><span>Informe de investigación, nov-2026</span><span>CEN, DGA, SEA, Censo 2017</span><span>Las cifras de prensa no son fuentes primarias</span></div>
       <div><b>Equipo 33</b><span>Platanus Hack 26: Santiago</span><span>Track Simulations</span></div>
     </div>
     <svg class="foot-word" viewBox="0 0 1000 205" role="img" aria-label="Aterriza"><text x="-6" y="178">Aterriza</text></svg>
-    <p class="credits">Fotos: <a href="https://commons.wikimedia.org/w/index.php?curid=85585568">“Quilicura y cerro Renca”</a>, WeHaKa, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/wiki/File:Torres_Charr%C3%BAa_(1).jpg">“Torres Charrúa (1)”</a>, Matías y Yordan Garrido González, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=185239324">“Canal Ortuzano, Estación Central y Cerrillos”</a>, Carlos Figueroa Rojas, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=17460421">“Rear of rack at NERSC data center”</a>, Derrick Coetzee, <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.en">CC0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=126149201">“Camino por el Humedal de Quilicura”</a>, Sodastik, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=13323990">“Smog sobre Santiago de Chile”</a>, Isha, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>. Todas vía Wikimedia Commons.</p>
+    <p class="credits">Fotos: <a href="https://commons.wikimedia.org/w/index.php?curid=85585568">“Quilicura y cerro Renca”</a>, WeHaKa, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/wiki/File:Torres_Charr%C3%BAa_(1).jpg">“Torres Charrúa (1)”</a>, Matías y Yordan Garrido González, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=185239324">“Canal Ortuzano, Estación Central y Cerrillos”</a>, Carlos Figueroa Rojas, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=17460421">“Rear of rack at NERSC data center”</a>, Derrick Coetzee, <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.en">CC0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=126149201">“Camino por el Humedal de Quilicura”</a>, Sodastik, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=13323990">“Smog sobre Santiago de Chile”</a>, Isha, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>, todas vía Wikimedia Commons. Mapa © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>.</p>
   </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="/static/story.js"></script>
 </body>
 </html>
