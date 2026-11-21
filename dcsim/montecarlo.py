@@ -99,8 +99,16 @@ def summarize(raw, extra, policy: Policy, mode: str) -> dict:
         for y in range(com.shape[2]):
             mode_com[i, y] = np.bincount(com[:, i, y]).argmax()
     moved = (com != com[:, :, :1]).any(axis=2).mean(axis=0)
+    # A dónde se muda cada proyecto, año a año: fracción de futuros y comuna de destino más común
+    home = np.array([C.COMMUNE_IDX[p.commune] for p in C.PROJECTS])[None, :, None]
+    away = com != home  # (n, NK, NY)
+    p_moved = away.mean(axis=0)
+    dest = np.full(p_moved.shape, -1, dtype=int)
+    for i, y in zip(*np.nonzero(p_moved >= 0.1), strict=True):
+        dest[i, y] = int(np.bincount(com[away[:, i, y], i, y]).argmax())
     out["projects"] = {"status_prob": _r(probs, 2), "commune_mode": mode_com.tolist(),
-                       "p_relocated": _r(moved, 2)}
+                       "p_relocated": _r(moved, 2), "p_moved": _r(p_moved, 2),
+                       "dest_mode": dest.tolist()}
     d = np.array(extra["delays"]) if extra["delays"] else np.array([0.0])
     f = np.array(extra["fuel"]) if extra["fuel"] else np.array([0.0])
     hist, edges = np.histogram(f, bins=[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,

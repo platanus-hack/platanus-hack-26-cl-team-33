@@ -294,7 +294,7 @@ main { position: relative; z-index: 1; background: var(--bg); }
 
 /* ---------- mapa (fragmento de interfaz: data-ui) */
 .map-card { position: relative; background: var(--surface); display: flex; flex-direction: column; min-width: 0; }
-.map-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; }
+.map-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 10px 12px; }
 .seg { display: inline-flex; gap: 4px; }
 .seg button {
   min-height: 36px; padding: 0 12px; border: 0; border-radius: 0; cursor: pointer; font: inherit;
@@ -302,7 +302,8 @@ main { position: relative; z-index: 1; background: var(--bg); }
 }
 .seg button:hover { background: #d5d9e0; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--light); }
-.map-when { font-size: var(--step-small); color: var(--muted); }
+.map-when { font-size: var(--step-small); color: var(--muted); margin: 0; padding: 0 12px 8px; }
+.mk.mv { border: 2px dashed var(--accent); }
 #map { height: 600px; background: #dfe2e7; }
 .base-tiles { filter: grayscale(1) contrast(0.9) brightness(1.05); }
 .map-bottom { display: flex; align-items: center; gap: 16px; padding: 12px; }
@@ -398,3 +399,5 @@ table.data .range { color: var(--muted); }
   .more-findings { grid-template-columns: 1fr; }
   .detail { padding: 100px var(--m); }
 }
+.map-info dd small { display: block; font-weight: 400; color: var(--muted); }
+.seg button:disabled { opacity: 0.45; cursor: not-allowed; }

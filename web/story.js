@@ -33,7 +33,12 @@ const METRICS = {
 };
 
 const S = { story: null, meta: null, ens: {}, current: "status_quo", year: 2035, metric: "c_conflict",
-  playing: null, customValues: null, customText: "", editing: false };
+  view: "value", playing: null, customValues: null, customText: "", editing: false };
+// al elegir una regla, el mapa muestra la capa donde esa regla más se nota
+const RULE_METRIC = { mesa: "c_it", aire: "c_water_ls", acumulativa: "c_conflict", norte: "c_it",
+  paquete: "c_conflict", custom: "c_conflict" };
+const WARM = "#d8461b";
+const MID = "#d9dce2";
 
 // ---------------------------------------------------------------- arranque
 Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then((r) => r.json())])
@@ -85,6 +90,8 @@ function select(id) {
     b.tabIndex = on ? 0 : -1;
   });
   const custom = id === "custom";
+  if (id === "status_quo") setView("value", false);
+  else { setView("diff", false); if (RULE_METRIC[id]) setMetric(RULE_METRIC[id], false); }
   const showForm = custom && (!S.customValues || S.editing);
   $("#custom").hidden = !showForm;
   $("#bands").hidden = showForm;
@@ -223,13 +230,23 @@ document.querySelectorAll(".band[data-metric]").forEach((b) => {
   b.addEventListener("click", go);
   b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
 });
-function setMetric(m) {
+function setMetric(m, redraw = true) {
   S.metric = m;
   document.querySelectorAll(".seg [data-metric]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.metric === m)));
   document.querySelectorAll(".band[data-metric]").forEach((x) => x.classList.toggle("on", x.dataset.metric === m));
-  updateMap();
+  if (redraw) updateMap();
 }
-setMetric("c_conflict");
+function setView(v, redraw = true) {
+  S.view = S.current === "status_quo" ? "value" : v;
+  document.querySelectorAll(".seg [data-view]").forEach((x) => {
+    x.setAttribute("aria-pressed", String(x.dataset.view === S.view));
+    if (x.dataset.view === "diff") x.disabled = S.current === "status_quo";
+  });
+  if (redraw) updateMap();
+}
+document.querySelectorAll(".seg [data-view]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+setMetric("c_conflict", false);
+setView("value", false);
 
 const yearInput = $("#year");
 yearInput.addEventListener("input", () => { stopPlay(); S.year = Number(yearInput.value); updateMap(); });
@@ -255,8 +272,30 @@ function metricMax(m) {
   Object.values(S.ens).forEach((res) => res.communes[m].p50.forEach((row) => row.forEach((v) => { max = Math.max(max, v); })));
   return max * METRICS[m].scale || 1;
 }
-function ramp(t) {
-  return COBALT_RAMP[Math.max(0, Math.min(COBALT_RAMP.length - 1, Math.round(t * (COBALT_RAMP.length - 1))))];
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function mix(a, b, t) {
+  const [x, y] = [hex(a), hex(b)];
+  return `rgb(${x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(",")})`;
+}
+function ramp(t) {  // secuencial continua: un solo tono, de claro a oscuro
+  const n = COBALT_RAMP.length - 1;
+  const p = Math.max(0, Math.min(1, t)) * n;
+  const i = Math.min(n - 1, Math.floor(p));
+  return mix(COBALT_RAMP[i], COBALT_RAMP[i + 1], p - i);
+}
+function diverge(t) {  // divergente: cobalto = menos que como hoy, gris = igual, naranjo = más
+  const a = Math.min(1, Math.abs(t)) ** 0.7;
+  return t < 0 ? mix(MID, COBALT_RAMP[5], a) : mix(MID, WARM, a);
+}
+function diffMax(m) {
+  const base = S.ens.status_quo;
+  let max = 0;
+  if (!base) return 1;
+  Object.entries(S.ens).forEach(([id, res]) => {
+    if (id === "status_quo") return;
+    res.communes[m].p50.forEach((row, i) => row.forEach((v, y) => { max = Math.max(max, Math.abs(v - base.communes[m].p50[i][y])); }));
+  });
+  return max * METRICS[m].scale || 1;
 }
 function dcStyle(code, mw) {
   const r = 3 + 1.4 * Math.sqrt(mw);
@@ -276,18 +315,37 @@ function updateMap() {
   $("#yearLabel").textContent = y;
   if (!res) { $("#mapWhen").textContent = S.current === "custom" ? "Simula tu regla para verla en el mapa" : "Cargando el mapa…"; return; }
   const name = S.current === "custom" ? "tu regla" : S.story.tabs.find((t) => t.id === S.current).name;
-  $("#mapWhen").textContent = y < 2026 ? "Historia real" : y === 2026 ? "2026: real hasta noviembre"
-    : `Futuro simulado · ${name}`;
+  const base = S.ens.status_quo;
+  const diff = S.view === "diff" && S.current !== "status_quo" && base;
+  const when = y < 2026 ? "Historia real, igual en todas las reglas" : y === 2026 ? "2026: real hasta noviembre"
+    : diff ? `${name} comparado con seguir como hoy` : `Futuro simulado · ${name}`;
+  $("#mapWhen").textContent = diff && y <= 2026 ? `${when}: todavía no hay diferencia` : when;
   const m = METRICS[S.metric];
-  const max = metricMax(S.metric);
-  $("#rampHigh").textContent = `${fmt(max, m.d)} ${m.unit}`;
+  const max = diff ? diffMax(S.metric) : metricMax(S.metric);
+  const rampEl = $("#ramp");
+  if (diff) {
+    $("#rampLow").textContent = `−${fmt(max, m.d)} ${m.unit}`;
+    $("#rampHigh").textContent = `+${fmt(max, m.d)} ${m.unit}`;
+    rampEl.style.background = `linear-gradient(90deg, ${COBALT_RAMP[5]}, ${MID}, ${WARM})`;
+    rampEl.title = "Menos que como hoy, igual, más que como hoy";
+  } else {
+    $("#rampLow").textContent = "0";
+    $("#rampHigh").textContent = `${fmt(max, m.d)} ${m.unit}`;
+    rampEl.style.background = `linear-gradient(90deg, ${COBALT_RAMP.join(", ")})`;
+    rampEl.title = m.label;
+  }
   communeLayer.clearLayers();
   S.meta.communes.forEach((c, i) => {
     const v = res.communes[S.metric].p50[i][yi(y)] * m.scale;
-    const circle = L.circle([c.lat, c.lon], {
-      radius: c.radius_km * 1000, color: "#eef0f3", weight: 1, fillColor: ramp(v / max), fillOpacity: v > 0 ? 0.6 : 0.12,
-    });
-    circle.bindTooltip(`<b>${esc(c.name)}</b><br>${m.label}: ${fmt(v, m.d)} ${m.unit}`, { sticky: true });
+    const b = base ? base.communes[S.metric].p50[i][yi(y)] * m.scale : v;
+    const d = v - b;
+    const tiny = max * 0.02;
+    const fill = diff ? diverge(d / max) : ramp(v / max);
+    const op = diff ? (Math.abs(d) > tiny ? 0.7 : 0.15) : (v > 0 ? 0.6 : 0.12);
+    const circle = L.circle([c.lat, c.lon], { radius: c.radius_km * 1000, color: "#eef0f3", weight: 1, fillColor: fill, fillOpacity: op });
+    const cmp = S.current !== "status_quo" && base
+      ? `<br>Como hoy: ${fmt(b, m.d)} ${m.unit} (${d >= 0 ? "+" : "−"}${fmt(Math.abs(d), m.d)})` : "";
+    circle.bindTooltip(`<b>${esc(c.name)}</b><br>${m.label}: ${fmt(v, m.d)} ${m.unit}${cmp}`, { sticky: true });
     circle.on("click", () => showCommune(i));
     communeLayer.addLayer(circle);
   });
@@ -319,6 +377,23 @@ function updateMap() {
       dcLayer.addLayer(mk);
     });
   }
+  // proyectos que se mudan en al menos un cuarto de los futuros: se dibujan también en su destino
+  const pm = res.projects.p_moved;
+  const dm = res.projects.dest_mode;
+  if (pm && dm) {
+    S.meta.projects.forEach((p, i) => {
+      const share = pm[i][yi(y)];
+      const di = dm[i][yi(y)];
+      if (share < 0.25 || di < 0) return;
+      const c = S.meta.communes[di];
+      const ll = [c.lat + 0.03 * Math.sin(i * 2.4), c.lon + 0.03 * Math.cos(i * 2.4)];
+      const mk = L.circleMarker(ll, { radius: 3 + 1.4 * Math.sqrt(p.it_mw), color: COBALT_RAMP[5], weight: 2, dashArray: "4 4", fillOpacity: 0 });
+      const from = S.meta.communes.find((x) => x.id === p.commune).name;
+      mk.bindTooltip(`<b>${esc(p.name)}</b> · ${fmt(p.it_mw)} MW<br>Se muda de ${esc(from)} a ${esc(c.name)} en ${fmt(100 * share)}% de los futuros`);
+      mk.on("click", () => showProject(i));
+      dcLayer.addLayer(mk);
+    });
+  }
 }
 
 function infoPanel(html) {
@@ -331,16 +406,21 @@ function showCommune(i) {
   const res = S.ens[S.current];
   const c = S.meta.communes[i];
   const y = S.year;
-  const g = (k, sc = 1) => res.communes[k].p50[i][yi(y)] * sc;
+  const base = S.ens.status_quo;
+  const cmp = S.current !== "status_quo" && base;
+  const g = (k, sc = 1, r = res) => r.communes[k].p50[i][yi(y)] * sc;
+  const row = (label, k, sc, unit, d = 0) => `<dt>${label}</dt><dd>${fmt(g(k, sc), d)} ${unit}${
+    cmp ? `<small>como hoy ${fmt(g(k, sc, base), d)}</small>` : ""}</dd>`;
+  const usd = (r) => (g("c_muni_usd", 1, r) + g("c_fund_usd", 1, r)) / c.households;
   infoPanel(`<h3>${esc(c.name)} · ${y}</h3>
-    <p class="info-sub">${fmt(c.pop)} habitantes · ${fmt(c.households)} hogares</p>
+    <p class="info-sub">${fmt(c.pop)} habitantes · ${fmt(c.households)} hogares${cmp ? " · comparado con seguir como hoy" : ""}</p>
     <dl>
-      <dt>Data centers operando</dt><dd>${fmt(g("c_it"))} MW</dd>
-      <dt>Esperando red</dt><dd>${fmt(g("c_waitlist"))} MW</dd>
-      <dt>Electricidad de la comuna que usan</dt><dd>${fmt(g("c_share", 100))}%</dd>
-      <dt>Agua que usan</dt><dd>${fmt(g("c_water_ls"), 1)} L/s</dd>
-      <dt>Vecinos movilizados</dt><dd>${fmt(g("c_conflict", 100))}%</dd>
-      <dt>Patentes y fondos por hogar</dt><dd>US$ ${fmt((g("c_muni_usd") + g("c_fund_usd")) / c.households)} al año</dd>
+      ${row("Data centers operando", "c_it", 1, "MW")}
+      ${row("Esperando red", "c_waitlist", 1, "MW")}
+      ${row("Electricidad de la comuna que usan", "c_share", 100, "%")}
+      ${row("Agua que usan", "c_water_ls", 1, "L/s", 1)}
+      ${row("Vecinos movilizados", "c_conflict", 100, "%")}
+      <dt>Patentes y fondos por hogar</dt><dd>US$ ${fmt(usd(res))} al año${cmp ? `<small>como hoy US$ ${fmt(usd(base))}</small>` : ""}</dd>
     </dl>`);
 }
 function showProject(i) {
@@ -356,6 +436,8 @@ function showProject(i) {
     ${real ? `<p>Estado real en noviembre de 2026: <b>${real}</b></p>` : ""}
     <p>En ${y}, en los futuros simulados:</p>
     <dl>${rows.map((o) => `<dt>${labels[o.k]}</dt><dd>${fmt(100 * o.v)}%</dd>`).join("")}</dl>
+    ${res.projects.p_moved && res.projects.p_moved[i][yi(y)] >= 0.05 && res.projects.dest_mode[i][yi(y)] >= 0
+      ? `<p>Se muda a <b>${esc(S.meta.communes[res.projects.dest_mode[i][yi(y)]].name)}</b> en ${fmt(100 * res.projects.p_moved[i][yi(y)])}% de los futuros.</p>` : ""}
     ${p.hist.length ? `<ul>${p.hist.slice(0, 4).map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}`);
 }
 

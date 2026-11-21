@@ -59,12 +59,15 @@
 
         <div class="map-card" data-ui data-rise>
           <div class="map-top">
-            <div class="seg" role="group" aria-label="Color de las comunas">
+            <div class="seg" role="group" aria-label="Qué colorea las comunas">
               <button type="button" data-metric="c_conflict" aria-pressed="true">Vecinos movilizados</button>
               <button type="button" data-metric="c_water_ls" aria-pressed="false">Agua</button>
               <button type="button" data-metric="c_it" aria-pressed="false">Data centers</button>
             </div>
-            <span class="map-when" id="mapWhen">Futuro simulado</span>
+            <div class="seg" role="group" aria-label="Cómo se colorea">
+              <button type="button" data-view="value" aria-pressed="true">Valor</button>
+              <button type="button" data-view="diff" aria-pressed="false">Cambio vs como hoy</button>
+            </div>
           </div>
           <div id="map" role="img" aria-label="Mapa de Santiago con los data centers y las comunas"></div>
           <div class="map-info" id="mapInfo" hidden></div>
@@ -72,6 +75,7 @@
             <button class="play" id="play" type="button" aria-label="Reproducir de 2012 a 2035">Ver desde 2012</button>
             <label class="year"><span id="yearLabel">2035</span><input type="range" id="year" min="2012" max="2035" value="2035" aria-label="Año en el mapa"></label>
           </div>
+          <p class="map-when" id="mapWhen">Futuro simulado</p>
           <ul class="legend" id="legend">
             <li><i class="mk op"></i>Operando</li>
             <li><i class="mk bd"></i>En construcción</li>
@@ -79,7 +83,8 @@
             <li><i class="mk wt"></i>Esperando red</li>
             <li><i class="mk lt"></i>En tribunales</li>
             <li><i class="mk nw"></i>Nuevos, aún sin anunciar</li>
-            <li class="legend-ramp"><span id="rampLow">0</span><i class="ramp"></i><span id="rampHigh"></span></li>
+            <li><i class="mk mv"></i>Se muda aquí en parte de los futuros</li>
+            <li class="legend-ramp"><span id="rampLow">0</span><i class="ramp" id="ramp"></i><span id="rampHigh"></span></li>
           </ul>
         </div>
 
