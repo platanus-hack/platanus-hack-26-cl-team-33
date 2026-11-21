@@ -30,7 +30,8 @@ primera carga tarda 20 a 30 s; "Tu regla" tarda 40 a 60 s y "Coloca un data cent
   o las tres que más ayudan) y ver el mapa y seis cifras de 2035.
 - **Armar tu propia regla** con 8 palancas: umbral de diésel, plazo de permisos, incentivo al
   norte, fondo comunitario, proyectos por año, evaluación conjunta, enfriar sin agua y
-  transparencia.
+  transparencia. Se compara con seguir como hoy en los mismos futuros: en cuántos queda mejor
+  y en cuántos peor.
 - **Mover el año** de 2012 a 2035 y pintar las comunas por vecinos movilizados, agua o MW, en
   valor o en cambio respecto de "Como hoy".
 - **Colocar un data center** (sitio, tamaño, enfriamiento, año y regla). Cada futuro se corre
@@ -52,7 +53,8 @@ con su método, en [FINDINGS.md](FINDINGS.md).
   movilizados, 33% menos juicios, 55% menos agua y 12% más inversión en 2035. La cuenta de la luz
   sube 1,8% en vez de 2,0% (supuesto: la demanda que se va a Antofagasta no presiona la tarifa).
 - **El agua decide el juicio.** Si Google hubiera enfriado Cerrillos con aire en 2019, la
-  probabilidad de juicio bajaba de 83% a 2%.
+  probabilidad de juicio bajaba de 83% a 2%. Es el hallazgo más frágil: depende de cuánto pesa
+  el agua en la opinión de los vecinos (ver abajo).
 - **Más proyectos, más espera.** Con el doble de proyectos se conecta solo 19% más, pero los
   juicios se multiplican por 2,3.
 
@@ -68,32 +70,40 @@ con su método, en [FINDINGS.md](FINDINGS.md).
 - **Límites a la vista.** Los 1.420 MW en espera se cumplen casi por construcción, y las comunas
   con oposición no son una prueba ciega. 29 de los 62 proyectos no tienen nombre público: cuadran
   el inventario y la lista del CEN. Los efectos de la evaluación conjunta, la transparencia y la
-  tarifa no tienen dato chileno: son supuestos con rango (13 de los 41 parámetros se sortean en
-  cada futuro).
-- **Qué tan firmes son los hallazgos:** `uv run python -m dcsim.sensitivity` escribe
-  `cache/sensitivity.json`; el resultado está en la sección 4 de [FINDINGS.md](FINDINGS.md).
+  tarifa no tienen dato chileno: son supuestos con rango. De los 53 parámetros, 13 se sortean en
+  cada futuro y los otros 40 se prueban en sus extremos.
+- **Qué tan firmes son los hallazgos.** `dcsim/sensitivity.py` (76.500 simulaciones) lleva cada
+  uno de los 40 parámetros fijos a sus dos extremos y luego los sortea todos juntos. 5 de los 6
+  hallazgos se mantienen en los 80 ajustes; el de Cerrillos, en 79: si el agua pesa la mitad en
+  la opinión de los vecinos, la probabilidad de juicio con agua baja de 83% a 8% y deja de
+  cumplirse. Con todo sorteado a la vez se mantienen los 6. Detalle en la sección 4 de
+  [FINDINGS.md](FINDINGS.md).
 
 ## Cómo correrlo
 
 Necesitas uv. Tiempos medidos en un computador de 10 núcleos.
 
 ```bash
-uv sync                                       # dependencias fijadas en uv.lock
+uv sync --frozen                              # las versiones de uv.lock, igual que la CI
 uv run uvicorn dcsim.server:app --port 8000   # la página en http://localhost:8000
-uv run pytest                                 # 28 tests, ~8 s
+uv run pytest -q                              # 40 tests, ~9 s
 uv run ruff check .                           # estilo, igual que la CI
 uv run python -m dcsim.validation             # los 14 chequeos
+# si cambias el modelo, en este orden:
+uv run python -m dcsim.precompute             # portada y "como hoy" de "Tu regla", ~40 s
 uv run python -m dcsim.explore                # 15.080 simulaciones, ~3 min
 uv run python -m dcsim.findings               # resume la batería en cache/findings.json
-uv run python -m dcsim.sensitivity            # qué tan firmes son los hallazgos
-uv run python -m dcsim.precompute             # 2.200 futuros de la portada, ~40 s
+uv run python -m dcsim.sensitivity            # 76.500 simulaciones, ~16 min
 ```
 
 El servidor parte al instante y los tests tardan segundos porque leen resultados versionados en
-`cache/`. Sus nombres llevan una huella de `model.py`, `catalog.py`, `params.py`, `policy.py` y
-`montecarlo.py`: si cambias uno de esos archivos, corre `precompute`, `explore` y `findings`.
-Si no, el servidor vuelve a simular al partir y `test_findings_were_built_with_this_code` falla.
-Con el mismo código y la misma máquina, esos comandos rehacen byte a byte lo versionado.
+`cache/`. Los nombres de los ensambles y el campo `model` de `findings.json` y
+`sensitivity.json` llevan una huella de `model.py`, `catalog.py`, `params.py`, `policy.py` y
+`montecarlo.py`: si cambias uno de esos archivos, corre `precompute`, `explore`, `findings` y
+`sensitivity`, en ese orden. Si no, el servidor vuelve a simular al partir y fallan
+`test_findings_were_built_with_this_code` y `test_sensitivity_was_built_with_this_code`. Con el
+mismo código y la misma máquina, `precompute` y `findings` rehacen byte a byte lo versionado, y
+`sensitivity` repite sus resultados (solo cambia el tiempo que anota).
 
 ## Estructura
 
@@ -102,20 +112,20 @@ Con el mismo código y la misma máquina, esos comandos rehacen byte a byte lo v
 | `dcsim/__init__.py` | Marca el paquete. |
 | `dcsim/model.py` | El motor: agentes, hogares y stocks, paso mensual 2012–2035, modos `free` y `anchored`. |
 | `dcsim/catalog.py` | Datos con su fuente: 15 comunas, 7 nodos de red, 2 acuíferos, 62 proyectos y lo observado. |
-| `dcsim/params.py` | 41 parámetros con valor central, rango, fuente y tipo (dato, calibrado o supuesto). |
+| `dcsim/params.py` | 53 parámetros con valor central, rango, fuente y tipo (dato, calibrado o supuesto); 13 se sortean en cada futuro. |
 | `dcsim/policy.py` | Las palancas (`Policy`) y las 8 reglas predefinidas. |
 | `dcsim/montecarlo.py` | N futuros en paralelo, mediana y percentiles 5–95, caché en disco. |
 | `dcsim/validation.py` | Hindcast: los 14 chequeos. |
 | `dcsim/insights.py` | Cada regla contra "Como hoy" y 6 hipótesis del informe. |
 | `dcsim/explore.py` | Batería de 185 configuraciones: factorial de 7 palancas, barridos, contrafactuales. |
 | `dcsim/findings.py` | Resume la batería en 7 hallazgos (`cache/findings.json`). |
-| `dcsim/sensitivity.py` | Qué tan firmes son los hallazgos (`cache/sensitivity.json`). |
+| `dcsim/sensitivity.py` | Qué tan firmes son los hallazgos: 40 parámetros fijos en sus extremos y sorteados juntos (`cache/sensitivity.json`). |
 | `dcsim/place.py` | "Coloca un data center": cada futuro con y sin el data center del usuario. |
-| `dcsim/precompute.py` | Rehace los resultados de la portada y borra los obsoletos. |
+| `dcsim/precompute.py` | Rehace los resultados de la portada y "como hoy" con 60 y 100 futuros para "Tu regla"; borra los obsoletos. |
 | `dcsim/server.py` | API (FastAPI) y archivos estáticos. |
 | `web/` | La página: `index.html`, `story.js`, `place.js`, `story.css` e `img/`. |
-| `tests/` | Determinismo, palancas, hindcast, invariantes del motor y de la API, coloca un data center. |
-| `cache/` | Versionados: `findings.json` y los `*_200_*.json`, así el servidor no simula en una CPU chica. `explore_raw.json` (~32 MB) no. |
+| `tests/` | Determinismo, palancas, hindcast, invariantes del motor y de la API, "Tu regla" en las mismas semillas, sensibilidad, coloca un data center. |
+| `cache/` | Versionados: `findings.json`, `sensitivity.json`, los `*_200_*.json` de la portada y `anchored_60_*`/`anchored_100_*` ("como hoy" para "Tu regla"), así el servidor no simula en una CPU chica. `explore_raw.json` (~32 MB) no: solo lo rehace `explore`. |
 | `render.yaml` | El servicio en Render. |
 | `pyproject.toml`, `uv.lock` | Dependencias: NumPy, FastAPI, uvicorn; pytest, ruff y httpx para desarrollo. |
 | `.github/workflows/ci.yml` | CI: ruff y pytest en cada push y pull request. |
@@ -125,11 +135,12 @@ Con el mismo código y la misma máquina, esos comandos rehacen byte a byte lo v
 
 | Ruta | Qué devuelve |
 |---|---|
-| `GET /api/story` | Lo que usa la portada: 6 reglas con sus cifras de 2035, chequeos y hallazgos. |
+| `GET /api/story` | Lo que usa la portada: 6 reglas con sus cifras de 2035, chequeos, hallazgos y un resumen de la sensibilidad (`sensitivity`). |
 | `GET /api/meta` | Comunas, proyectos, nodos, reglas, parámetros y datos observados. |
 | `GET /api/scenario/{sid}` | Los 200 futuros resumidos de una regla predefinida. |
-| `POST /api/run` | Simula `{"policy": {...}}` (campos de `Policy`, 422 si no valen); `baseline`/`compare` comparan con las mismas semillas. |
-| `GET /api/baseline` | La línea base con las mismas semillas que `POST /api/run`. |
+| `POST /api/run` | Simula `{"policy": {...}}` (campos de `Policy`; 422 si no valen) en `DCSIM_N_CUSTOM` futuros, semillas 0 a N−1. Suma `baseline` (`n` y medianas de 2035 de seguir como hoy en esas semillas) y `compare`: por cifra, en cuántos futuros la regla queda mejor, peor o igual (`better`, `worse`, `same`, `n`); para los MW operando, con más o con menos (`more`, `less`). |
+| `GET /api/baseline` | Seguir como hoy en esas mismas semillas, completo (el mapa de "Tu regla" compara contra esto). |
+| `GET /api/sensitivity` | El análisis de sensibilidad completo (`cache/sensitivity.json`). |
 | `GET /api/place/site?lat=&lon=` | Comuna, nodo, acuífero y hogares alrededor de un punto, sin simular. |
 | `POST /api/place` | Los futuros con y sin el data center del usuario (400 si el sitio no sirve). |
 | `GET /api/validation` | Los 14 chequeos con sus bandas y fuentes. |
@@ -142,12 +153,13 @@ Con el mismo código y la misma máquina, esos comandos rehacen byte a byte lo v
 
 Render, con `render.yaml` (plan free): `uv sync --frozen --no-dev`, arranque con `uvicorn` y
 health check en `/api/status`. Al partir no simula: lee de `cache/` los 2.200 futuros de la
-portada (10 reglas × 200 y la validación). "Tu regla" y "Coloca un data center" sí simulan.
+portada (10 reglas × 200 y la validación) y "como hoy" con los futuros de "Tu regla". "Tu regla"
+y "Coloca un data center" sí simulan.
 
 | Variable | En Render | Si falta | Qué controla |
 |---|---|---|---|
 | `DCSIM_WORKERS` | 1 | hasta 8 | Procesos que simulan; 1 porque el plan free tiene 512 MB. |
-| `DCSIM_N_CUSTOM` | 60 | 100 | Futuros de "Tu regla". |
+| `DCSIM_N_CUSTOM` | 60 | 100 | Futuros de "Tu regla" y de su comparación con seguir como hoy. |
 | `DCSIM_N_PLACE` | 20 | 40 | Futuros de "Coloca un data center", cada uno con y sin él. |
 
 ## Fuentes de datos
@@ -166,13 +178,13 @@ técnicos. Las cifras de prensa no son fuentes primarias y las coordenadas son a
   urgencia a camas de hospital. Sus PR #4 (motor), #5 (API, tests y CI) y #6 (interfaz) se
   fusionan en `main`.
 - **Cerca de las 05:00, cambio de tema.** `795fde9` (05:04) vuelve el repo a la plantilla, y en
-  `main` el commit `3e7dfd4` (05:18) borra todos los archivos.
+  `main` un commit de reinicio, `3e7dfd4` (05:18), borra todos los archivos.
 - **Desde las 05:30.** `5c62800` es el primer commit del simulador de data centers y ya trae el
   motor completo y la validación. Desde ahí la historia es incremental: interfaz y API, batería
-  de simulaciones, hallazgos, despliegue, correcciones de una revisión y "Coloca un data center".
-
-> Nota del 21-nov-2026: desde `3e7dfd4`, la rama por defecto de GitHub (`main`) está vacía.
-> Aterriza vive en las ramas `person-a/*` hasta que se fusione en `main` (ver `git log --all`).
+  de simulaciones, hallazgos, despliegue, correcciones de una revisión, "Coloca un data center"
+  y el análisis de sensibilidad.
+- **Integración.** Mientras `main` estuvo vacía, el trabajo siguió en las ramas `person-a/*`;
+  después se integró a `main` por PR.
 
 ## Créditos
 
