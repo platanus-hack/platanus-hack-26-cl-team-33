@@ -52,10 +52,10 @@ _lock = threading.RLock()  # reentrante: story() e insights() piden escenarios d
 _memo: dict = {}
 
 
-def _cached(key, fn):
+def _cached(key, fn, lock=None):
     if key in _memo:
         return _memo[key]
-    with _lock:
+    with _lock if lock is None else lock:
         if key not in _memo:
             _memo[key] = fn()
     return _memo[key]
@@ -76,20 +76,25 @@ def _all_results() -> dict:
     return {sid: _scenario(sid) for sid in ids}
 
 
+_base_lock = threading.Lock()
+
+
 def _baseline(n: int) -> dict:
     """Seguir como hoy en los mismos n futuros (semillas 0..n-1) que corre una regla propia.
 
-    Se lee del disco (python -m dcsim.precompute) o se simula una sola vez.
+    Se lee del disco (python -m dcsim.precompute) o se simula una sola vez. Tiene su propio
+    candado: si falta el archivo, simularlo no frena a la portada.
     """
-    return _cached(("baseline", n), lambda: run_ensemble(STATUS_QUO, n=n))
+    return _cached(("baseline", n), lambda: run_ensemble(STATUS_QUO, n=n), _base_lock)
 
 
 def _warm() -> None:
     def work():
         _cached("validation", lambda: run_validation(n=N_PRESET))
         _all_results()
-        _baseline(N_CUSTOM)
         _cached("insights", _insights)
+        story()
+        _baseline(N_CUSTOM)  # al final: lo único que puede tardar si falta en disco
 
     threading.Thread(target=work, daemon=True).start()
 

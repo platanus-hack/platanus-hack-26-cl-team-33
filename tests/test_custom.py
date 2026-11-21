@@ -1,5 +1,7 @@
 """«Tu regla» se compara con seguir como hoy en los mismos futuros (mismas semillas)."""
 
+import threading
+
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -61,3 +63,35 @@ def test_status_quo_as_custom_rule_changes_nothing(client):
     for k, c in res["compare"].items():
         assert c["same"] == c["n"] == N, k  # ni mejor ni peor, ni más ni menos
     assert res["paired"] == client.get("/api/baseline").json()["paired"]  # los mismos futuros
+
+
+def test_simulating_the_baseline_does_not_block_the_page(monkeypatch):
+    """Si falta «como hoy» en disco se simula al partir, con su propio candado: mientras tanto
+    la portada (story, escenarios) se sigue armando."""
+    slow_n, started, release = 3, threading.Event(), threading.Event()
+    real = server.run_ensemble
+
+    def fake(policy, n=200, **kw):  # el «como hoy» de 3 futuros sigue «simulando» hasta soltarlo
+        if n != slow_n:
+            return real(policy, n=n, **kw)
+        started.set()
+        release.wait(30)
+        return {"meta": {"n": n}}
+
+    # candados nuevos: otros hilos del servidor que sigan vivos no se cruzan con esta prueba
+    monkeypatch.setattr(server, "run_ensemble", fake)
+    monkeypatch.setattr(server, "_lock", threading.RLock())
+    monkeypatch.setattr(server, "_base_lock", threading.Lock())
+    base = threading.Thread(target=server._baseline, args=(slow_n,), daemon=True)
+    page = threading.Thread(target=server._cached, args=(("prueba",), dict), daemon=True)
+    try:
+        base.start()
+        assert started.wait(30)
+        page.start()
+        page.join(5)
+        assert not page.is_alive(), "armar la portada esperó a que se simulara «como hoy»"
+    finally:
+        release.set()
+        base.join(30)
+        for key in (("baseline", slow_n), ("prueba",)):
+            server._memo.pop(key, None)
