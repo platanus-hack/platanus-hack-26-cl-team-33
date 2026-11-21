@@ -290,6 +290,42 @@ def findings() -> list:
     return json.loads(path.read_text()) if path.exists() else []
 
 
+SENSITIVITY_JSON = Path(__file__).resolve().parent.parent / "cache" / "sensitivity.json"
+
+
+def _read_sensitivity() -> dict:
+    return json.loads(SENSITIVITY_JSON.read_text()) if SENSITIVITY_JSON.exists() else {}
+
+
+@app.get("/api/sensitivity")
+def sensitivity() -> dict:
+    """¿Se mantienen los hallazgos si cambian los supuestos? (uv run python -m dcsim.sensitivity)"""
+    return _cached("sensitivity", _read_sensitivity)
+
+
+def sensitivity_summary(sens: dict) -> dict:
+    """Lo justo para cada hallazgo de la portada: en cuántas variantes de los supuestos se
+    mantiene, si resiste sortearlos todos juntos y en qué extremos no se mantiene.
+
+    joint_holds es None si el análisis se corrió sin el sorteo conjunto. Cada falla trae el
+    valor del supuesto en ese extremo y su valor central, para escribir «baja de 1,2 a 0,6».
+    """
+    factors = {f["key"]: f for f in sens.get("factors", [])}
+    out = {}
+    for f in sens.get("findings", []):
+        fails = []
+        for row in f["oat"]:
+            fac = factors.get(row["key"], {})
+            fails += [{"key": row["key"], "label": fac.get("label", row["key"]), "end": end,
+                       "value": fac.get(end), "base": fac.get("base"), "unit": fac.get("unit")}
+                      for end in ("low", "high") if not row[f"holds_{end}"]]
+        joint = f.get("joint") or {}
+        out[f["id"]] = {"holds": f["holds"], "total": f["total"],
+                        "joint_holds": joint["holds"] if joint.get("value") is not None else None,
+                        "fails": fails}
+    return out
+
+
 STORY_TABS = ["status_quo", "mesa", "aire", "acumulativa", "norte", "paquete"]
 STORY_KEYS = ["it_chile", "dc_share_national", "water_ls_rm", "conflict_rm", "litigations",
               "invest_lost", "invest_realized", "bill_pct", "waitlist_mw"]
@@ -299,7 +335,8 @@ STORY_CHECKS = ["rm_2021", "google_water", "rm_2025", "waitlist", "litigations",
 
 @app.get("/api/story")
 def story() -> dict:
-    """Lo justo para la portada: 6 reglas × pocas cifras en 2035, y la prueba resumida."""
+    """Lo justo para la portada: 6 reglas × pocas cifras en 2035, la prueba resumida y qué tan
+    firme es cada hallazgo."""
     def build():
         yi = C.YEARS.index(2035)
         tabs = []
@@ -318,7 +355,7 @@ def story() -> dict:
                 "n_validation": kinds["validación"], "n_calibration": kinds["calibración"],
                 "n_custom": N_CUSTOM,
                 "checks": [checks[i] for i in STORY_CHECKS if i in checks],
-                "findings": findings()}
+                "findings": findings(), "sensitivity": sensitivity_summary(sensitivity())}
     return _cached("story", build)
 
 

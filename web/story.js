@@ -7,6 +7,15 @@ const nf = (d = 0) => new Intl.NumberFormat("es-CL", { maximumFractionDigits: d,
 const fmt = (x, d = 0) => nf(d).format(x);
 const money = (musd) => (musd >= 1000 ? `US$ ${fmt(musd / 1000, 1)} mil millones` : `US$ ${fmt(musd)} millones`);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+// valor de un supuesto sin perder cifras (0,004 no es 0; 0,995 no es 0,99). Parte de los decimales
+// de siempre (2 bajo 1, 1 bajo 10, 0 sobre eso) y agrega los que falten; min = 0 para texto corrido
+function num(x, min) {
+  const ax = Math.abs(x);
+  const lo = min ?? (ax < 1 && x !== 0 ? 2 : ax < 10 ? 1 : 0);
+  let d = lo;
+  while (d < 6 && Math.abs(Math.round(x * 10 ** d) / 10 ** d - x) > 1e-9 * Math.max(1, ax)) d += 1;
+  return new Intl.NumberFormat("es-CL", { minimumFractionDigits: lo, maximumFractionDigits: d }).format(x).replace("-", "−");
+}
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const Y0 = 2012;
 const yi = (y) => y - Y0;
@@ -60,9 +69,16 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
     S.noteText = `Corre ${story.n_custom || 100} futuros; puede tardar hasta un minuto.`;
     $("#customNote").textContent = S.noteText;
     document.querySelectorAll("[data-n-custom]").forEach((el) => { el.textContent = fmt(story.n_custom || 100); });
+    // cuántos supuestos se sortean en cada futuro y cuántos quedan fijos (los que prueba «Qué tan firmes»)
+    const sampled = meta.params.filter((p) => p.sample).length;
+    const fill = (sel, v) => document.querySelectorAll(sel).forEach((el) => { el.textContent = fmt(v); });
+    fill("[data-n-params]", meta.params.length);
+    fill("[data-n-sampled]", sampled);
+    fill("[data-n-fixed]", meta.params.length - sampled);
     renderNumbers(false);
     fillFindings();
     fillProof();
+    Object.keys(lazy).forEach((id) => loadLazy(document.getElementById(id)));  // abiertos antes de que llegaran los datos
     initMap();
     if (typeof initPlace === "function") initPlace(meta);
     loadEnsemble("status_quo").then(() => {
@@ -410,7 +426,7 @@ function updateMap() {
   const base = baseEns();
   const diff = S.view === "diff" && S.current !== "status_quo" && base;
   const vs = S.current === "custom" ? `Tu regla comparada con seguir como hoy en los mismos ${fmt(res.meta.n)} futuros`
-    : `${name} comparado con seguir como hoy`;
+    : `${name} frente a seguir como hoy`;  // "frente a": sirve para nombres femeninos y masculinos
   const when = y < 2026 ? "Historia real, igual en todas las reglas" : y === 2026 ? "2026: real hasta noviembre"
     : diff ? vs : `Futuro simulado · ${name}`;
   $("#mapWhen").textContent = diff && y <= 2026 ? `${when}: todavía no hay diferencia` : when;
@@ -551,15 +567,149 @@ function fillFindings() {
   if (byId.boom && byId.boom.mw_pct !== undefined) set("boom-mw", `${fmt(byId.boom.mw_pct)}%`);
   const n = (S.story.findings || [])[0];
   if (n) $("#closeStats").textContent = `${fmt(n.n_sims)} simulaciones, 200 futuros por regla, ${S.story.passed} de ${S.story.total} chequeos con datos reales.`;
+  // bajo cada hallazgo de la portada, si resiste mover los supuestos
+  document.querySelectorAll(".chapter[data-finding]").forEach((ch) => {
+    const line = firmLine((S.story.sensitivity || {})[ch.dataset.finding]);
+    const p = ch.querySelector(".ch-text");
+    if (line && p && !p.querySelector(".ch-firm")) p.insertAdjacentHTML("beforeend", `<span class="ch-firm">${line}</span>`);
+  });
 }
 
 function fillMoreFindings() {
   const byId = Object.fromEntries((S.story.findings || []).map((f) => [f.id, f]));
   const others = ["lampa", "transparencia", "trayectoria", "paquete"].map((k) => byId[k]).filter(Boolean);
+  const firm = (id) => { const line = firmLine((S.story.sensitivity || {})[id]); return line ? `<p class="finding-firm">${line}</p>` : ""; };
   $("#moreFindings").innerHTML = others.map((f) => `<div class="finding">
     <h3><span class="finding-stat">${esc(f.stat)}</span> ${esc(f.headline)}</h3>
-    <p>${esc(f.body)}</p><p class="finding-cost">${esc(f.cost)}</p></div>`).join("");
+    <p>${esc(f.body)}</p><p class="finding-cost">${esc(f.cost)}</p>${firm(f.id)}</div>`).join("");
   return Promise.resolve();
+}
+
+// ---------------------------------------------------------------- qué tan firmes son los hallazgos
+// Texto a partir de cache/sensitivity.json (python -m dcsim.sensitivity): cada supuesto fijo se lleva
+// a su extremo bajo y a su extremo alto, uno a la vez, y después se sortean todos juntos. Solo arman
+// texto: no tocan la página.
+
+// umbral de cada criterio (dcsim/sensitivity.py, evaluate) sobre el escalar con que se ordenan los
+// extremos, y si el hallazgo pide quedar sobre él (1) o bajo él (−1). Solo sirve para avisar de los
+// casos al límite: si se mantiene o no lo dice el análisis.
+const FIRM_LIMIT = { paquete: [0.5, 1], permisos: [0.05, -1], boom: [1, 1], cerrillos: [0.25, 1], lampa: [0.25, 1], transparencia: [2 / 3, 1] };
+const FIRM_NEAR = 0.05;  // a menos de 5% del umbral
+// contexto de una variante donde el hallazgo no se mantiene. En Cerrillos, "con agua" es lo que
+// pasó: la variante le da baja probabilidad al juicio real, y la regla de coherencia con la
+// historia cuenta juicios, no a quién se demanda
+const FIRM_CONTEXT = {
+  cerrillos: (f, v) => `Con agua es lo que pasó: en esa variante, el juicio que sí hubo contra Google Cerrillos tendría ${firmPct(v[0])} de probabilidad, contra ${firmPct(f.base[0])} con los supuestos centrales. La regla de coherencia con la historia cuenta juicios, no a quién se demanda, así que no descarta esa variante.`,
+};
+
+// el escalar de "range" y "top": la cifra misma, la diferencia con agua y con aire (Cerrillos) o
+// cuánto logra la transparencia del efecto del fondo
+function firmScalar(f, v) {
+  if (!Array.isArray(v)) return v;
+  return f.id === "transparencia" ? Math.abs(v[0]) / Math.max(Math.abs(v[1]), 1e-3) : v[0] - v[1];
+}
+const firmSigned = (f) => /^Cambio/.test(f.metric || "");  // un cambio relativo lleva signo: +0,4%
+
+// porcentaje que se lee bien: sin decimales, salvo bajo 10% si el decimal dice algo (+0,4%, 3,5%)
+function firmPct(x, signed = false) {
+  const a = Math.abs(100 * x);
+  const s = fmt(a, a < 10 && Math.round(a * 10) % 10 !== 0 ? 1 : 0);
+  return `${s === "0" ? "" : x < 0 ? "−" : signed ? "+" : ""}${s}%`;
+}
+
+// una cifra del hallazgo (valor central, de una variante o del sorteo conjunto)
+function firmValue(f, v) {
+  if (v == null) return "—";
+  if (f.fmt === "ratio") return `${fmt(v, 1)} veces`;
+  if (Array.isArray(v)) return f.id === "transparencia" ? `${firmPct(v[0])} vs ${firmPct(v[1])}` : `${firmPct(v[0])} → ${firmPct(v[1])}`;
+  return firmPct(v, firmSigned(f));
+}
+
+// el escalar en palabras, un valor (a) o un rango (a a b)
+function firmScalarText(f, a, b = null) {
+  const span = (one) => (b == null ? one(a) : `${one(a)} a ${one(b)}`);
+  if (f.id === "transparencia") {
+    return `la transparencia logra ${b == null ? firmPct(a) : `entre ${firmPct(a)} y ${firmPct(b)}`} del efecto del fondo`;
+  }
+  if (f.fmt === "pair_pct") return `diferencia de ${span((x) => fmt(100 * x))} puntos`;
+  if (f.fmt === "ratio") return `${span((x) => fmt(x, 1))} veces`;
+  return span((x) => firmPct(x, firmSigned(f)));
+}
+
+// «Peso del agua…» → «el peso del agua…», con el artículo y el número (baja / bajan) que pide la
+// primera palabra. Las siglas (PUE, WUE, NOx) no pasan a minúscula.
+function firmSubject(label) {
+  const w = label.split(" ")[0];
+  const acro = w.length > 1 && w[1] !== w[1].toLowerCase();
+  const plural = !acro && w.endsWith("s");
+  const fem = w === "Prob." || /(a|as|ión|dad)$/.test(w);
+  const art = plural ? (fem ? "las" : "los") : fem ? "la" : "el";
+  return [`${art} ${acro ? label : label[0].toLowerCase() + label.slice(1)}`, plural];
+}
+
+// «si el peso del agua … baja de 1,2 a 0,6»; x: {label, end, value, base, unit}
+function firmIf(x) {
+  const [subject, plural] = firmSubject(x.label);
+  const verb = (x.end === "low" ? "baja" : "sube") + (plural ? "n" : "");
+  const unit = x.unit && !["—", "1/mes", "1/año"].includes(x.unit) ? ` ${x.unit}` : "";
+  const from = x.base == null ? "" : `de ${num(x.base, 0)} `;
+  return `si ${esc(subject)} ${verb} ${from}a ${num(x.value, 0)}${esc(unit)}`;
+}
+
+// la línea bajo cada hallazgo; s: un hallazgo de story.sensitivity (/api/story)
+function firmLine(s) {
+  if (!s || !s.total) return "";
+  const link = '(<a href="#firmeza" data-open="firmeza">cómo se probó</a>)';
+  const head = `Se mantiene en ${fmt(s.holds)} de ${fmt(s.total)} variantes`;
+  if (!s.fails.length) {
+    return `${head} de los supuestos${s.joint_holds === false ? ", pero no al sortearlos todos juntos" : ""} ${link}.`;
+  }
+  const more = s.fails.length > 2 ? ` (y en ${fmt(s.fails.length - 2)} variantes más)` : "";
+  const joint = s.joint_holds === false ? " ni al sortear todos los supuestos juntos" : "";
+  return `${head}. No se mantiene ${s.fails.slice(0, 2).map(firmIf).join(" ni ")}${more}${joint} ${link}.`;
+}
+
+// el detalle técnico: un párrafo, una fila por hallazgo y, debajo, dónde no se mantiene.
+// kicker(f): el título del hallazgo en la portada; nSampled: supuestos que se sortean en cada futuro
+function firmHtml(sens, kicker = (f) => f.kicker, nSampled = null) {
+  if (!sens || !sens.findings || !sens.findings.length) return "<p>Todavía no está el análisis de sensibilidad (cache/sensitivity.json).</p>";
+  const F = sens.findings;
+  const nF = sens.factors.length;
+  const total = F[0].total;
+  const factor = Object.fromEntries(sens.factors.map((p) => [p.key, p]));
+  const at = (r, e) => ({ ...factor[r.key], end: e, value: factor[r.key][e] });  // para firmIf
+  const intro = `<p>En cada futuro, ${fmt(nF)} supuestos quedan fijos en su valor central${nSampled == null ? "" : ` (los otros ${fmt(nSampled)} se sortean)`}. Para ver si los hallazgos dependen de ellos, llevamos cada uno a su extremo bajo y a su extremo alto, de a uno: ${fmt(total)} variantes de ${fmt(sens.n_oat)} futuros cada una, con los mismos números aleatorios que la corrida normal, así la diferencia es efecto del supuesto. Después los sorteamos todos juntos en ${fmt(sens.n_joint)} futuros. Son ${fmt(sens.n_sims)} simulaciones. La columna de los supuestos centrales usa esos mismos ${fmt(sens.n_oat)} futuros, por eso puede diferir un poco de la cifra de la portada, calculada con más futuros.</p>`;
+  const rows = F.map((f) => `<tr><td>${esc(kicker(f))}<br><span class="range">${esc(f.metric)}</span></td>
+    <td data-label="Con los supuestos centrales">${firmValue(f, f.base)}</td>
+    <td data-label="Al mover cada supuesto">${firmScalarText(f, f.range[0], f.range[1])}</td>
+    <td data-label="Se mantiene">${fmt(f.holds)} de ${fmt(f.total)}</td>
+    <td data-label="Todos juntos">${firmValue(f, f.joint.value)}${f.joint.value != null && !f.joint.holds ? " · no se mantiene" : ""}</td>
+    <td data-label="Lo que más lo mueve">${f.top && f.top[0] ? esc(f.top[0].label) : "—"}</td></tr>`).join("");
+  const table = `<table class="data firm-table"><thead><tr><th>Hallazgo</th><th>Con los supuestos centrales</th><th>Al mover cada supuesto</th><th>Se mantiene</th><th>Todos sorteados juntos (${fmt(sens.n_joint)} futuros)</th><th>El supuesto que más lo mueve</th></tr></thead><tbody>${rows}</tbody></table>`;
+  // totales, dónde no se mantiene y dónde se mantiene por poco
+  const held = F.reduce((a, f) => a + f.holds, 0);
+  const tests = F.reduce((a, f) => a + f.total, 0);
+  const jointOk = F.filter((f) => f.joint.value != null && f.joint.holds).length;
+  const jointRun = F.filter((f) => f.joint.value != null).length;
+  let sum = `Se mantienen ${fmt(held)} de las ${fmt(tests)} pruebas (${fmt(F.length)} hallazgos × ${fmt(total)} variantes).`;
+  if (jointRun) sum += ` Con todos los supuestos sorteados juntos se mantienen ${jointOk === jointRun ? `los ${fmt(jointOk)}` : `${fmt(jointOk)} de ${fmt(jointRun)}`}.`;
+  const ends = (f, keep) => f.oat.flatMap((r) => ["low", "high"].filter((e) => keep(r, e)).map((e) => [r, e]));
+  const explain = (f, r, e) => {
+    const s = firmScalar(f, r[e]);
+    return `${firmIf(at(r, e))}: queda en ${firmValue(f, r[e])}${Array.isArray(r[e]) ? ` (${firmScalarText(f, s)})` : ""}`;
+  };
+  const context = (f, x) => (FIRM_CONTEXT[f.id] ? x.map(([r, e]) => ` ${FIRM_CONTEXT[f.id](f, r[e])}`).join("") : "");
+  const fails = F.map((f) => [f, ends(f, (r, e) => !r[`holds_${e}`])]).filter(([, x]) => x.length)
+    .map(([f, x]) => `«${esc(kicker(f))}» no se mantiene ${x.map(([r, e]) => explain(f, r, e)).join("; ni ")}. ${esc(f.criterion)}${context(f, x)}`);
+  const near = F.filter((f) => FIRM_LIMIT[f.id]).map((f) => {
+    const [lim, dir] = FIRM_LIMIT[f.id];
+    return [f, ends(f, (r, e) => r[`holds_${e}`] && dir * (firmScalar(f, r[e]) - lim) / Math.abs(lim) < FIRM_NEAR)];
+  }).filter(([, x]) => x.length)
+    .map(([f, x]) => `«${esc(kicker(f))}» se mantiene por poco ${x.map(([r, e]) => explain(f, r, e)).join("; y ")}. ${esc(f.criterion)}`);
+  const cons = F[0].total_consistent;
+  const history = `${cons === total ? `Las ${fmt(total)} variantes` : `${fmt(cons)} de las ${fmt(total)} variantes`} siguen siendo coherentes con la historia. ${esc(sens.hindcast_rule)}`;
+  const limits = `Límites: con ${fmt(sens.n_oat)} futuros por variante, cada porcentaje tiene un error de azar de hasta ${fmt(100 * Math.sqrt(0.25 / sens.n_oat))} puntos; las combinaciones de supuestos solo se prueban en el sorteo conjunto; y quedan números fijos en el código que este análisis no mueve: los pesos con que un proyecto elige comuna, cuánto molesta cada fuente y a qué distancia, quién cuenta como vecino, la desconfianza que deja cada juicio o anulación, las decisiones de la evaluación conjunta y la sensibilidad y el umbral de cada hogar.`;
+  return `${intro}${table}<p>${sum}</p>${fails.map((t) => `<p>${t}</p>`).join("")}${near.map((t) => `<p>${t}</p>`).join("")}<p class="where">${history}</p><p class="where">${limits}</p>`;
 }
 
 function fillProof() {
@@ -585,15 +735,22 @@ function fillProof() {
   }).join("");
 }
 
-document.querySelectorAll("[data-open]").forEach((a) => a.addEventListener("click", (e) => {
+// enlaces que abren una parte del detalle técnico, también los que se agregan después («cómo se probó»)
+document.addEventListener("click", (e) => {
+  const a = e.target.closest && e.target.closest("[data-open]");
+  const d = a && document.getElementById(a.dataset.open);
+  if (!d) return;
   e.preventDefault();
-  const d = document.getElementById(a.dataset.open);
   d.open = true;
   d.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
-}));
+});
 
 const lazy = {
   "mas-hallazgos": () => fillMoreFindings(),
+  firmeza: () => fetch("/api/sensitivity").then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); }).then((sens) => {
+    const byId = Object.fromEntries((S.story.findings || []).map((f) => [f.id, f]));
+    $("#firmezaBody").innerHTML = firmHtml(sens, (f) => (byId[f.id] || f).kicker, S.meta.params.filter((p) => p.sample).length);
+  }),
   matematica: () => { $("#mathBody").replaceChildren($("#mathTpl").content.cloneNode(true)); return Promise.resolve(); },
   chequeos: () => fetch("/api/validation").then((r) => r.json()).then((v) => {
     const n = (x) => fmt(x, Math.abs(x) < 10 && x % 1 ? 1 : 0);
@@ -613,9 +770,11 @@ const lazy = {
       }</tbody></table>`;
   }),
   supuestos: () => {
-    const nd = (x) => (Math.abs(x) < 1 && x !== 0 ? 2 : Math.abs(x) < 10 ? 1 : 0);
-    $("#paramsBody").innerHTML = `<table class="data"><thead><tr><th>Supuesto</th><th>Valor</th><th>Rango</th><th>¿Se sortea?</th><th>Tipo</th><th>Fuente</th></tr></thead><tbody>${
-      S.meta.params.map((p) => `<tr><td>${esc(p.label)}</td><td>${fmt(p.base, nd(p.base))} ${p.unit === "—" ? "" : esc(p.unit)}</td><td>${fmt(p.low, nd(p.low))} a ${fmt(p.high, nd(p.high))}</td><td>${p.sample ? "sí" : "no"}</td><td>${esc(p.kind)}</td><td>${esc(p.src)}</td></tr>`).join("")
+    const ps = S.meta.params;
+    const sampled = ps.filter((p) => p.sample).length;
+    $("#paramsBody").innerHTML = `<p>${fmt(ps.length)} supuestos: ${fmt(sampled)} se sortean en cada futuro y los otros ${fmt(ps.length - sampled)} quedan en su valor central. Esos ${fmt(ps.length - sampled)} se llevan a sus extremos en <a href="#firmeza" data-open="firmeza">Qué tan firmes son los hallazgos</a>.</p>
+      <table class="data"><thead><tr><th>Supuesto</th><th>Valor</th><th>Rango</th><th>¿Se sortea?</th><th>Tipo</th><th>Fuente</th></tr></thead><tbody>${
+      ps.map((p) => `<tr><td>${esc(p.label)}</td><td>${num(p.base)} ${p.unit === "—" ? "" : esc(p.unit)}</td><td>${num(p.low)} a ${num(p.high)}</td><td>${p.sample ? "sí" : "no"}</td><td>${esc(p.kind)}</td><td>${esc(p.src)}</td></tr>`).join("")
       }</tbody></table>`;
     return Promise.resolve();
   },
@@ -628,14 +787,19 @@ const lazy = {
     return Promise.resolve();
   },
 };
+// cada parte se llena al abrirla; si se abrió antes de que llegaran los datos, al llegar (arranque)
+function loadLazy(d) {
+  if (!d || !d.open || d.dataset.loaded || !S.meta || !S.story) return;
+  d.dataset.loaded = "1";
+  lazy[d.id]().catch(() => { d.dataset.loaded = ""; });
+}
 Object.keys(lazy).forEach((id) => {
   const d = document.getElementById(id);
-  d.addEventListener("toggle", () => {
-    if (!d.open || d.dataset.loaded || !S.meta || !S.story) return;
-    d.dataset.loaded = "1";
-    lazy[id]().catch(() => { d.dataset.loaded = ""; });
-  });
+  d.addEventListener("toggle", () => loadLazy(d));
 });
+// un enlace directo a una parte (/#firmeza) la abre
+const linked = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
+if (linked && linked.tagName === "DETAILS") linked.open = true;
 
 // ---------------------------------------------------------------- entradas al hacer scroll
 const io = new IntersectionObserver((entries) => {
