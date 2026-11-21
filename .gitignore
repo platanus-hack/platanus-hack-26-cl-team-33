@@ -9,3 +9,6 @@ cache/*
 # resultados precalculados que usa el servidor (python -m dcsim.precompute)
 !cache/anchored_200_*.json
 !cache/free_200_*.json
+# "Como hoy" con los futuros de "Tu regla" (60 en Render free, 100 en standard)
+!cache/anchored_60_*.json
+!cache/anchored_100_*.json
