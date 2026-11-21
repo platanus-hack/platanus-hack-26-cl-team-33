@@ -12,7 +12,7 @@ from __future__ import annotations
 import numpy as np
 
 from . import catalog as C
-from .model import REAL_STATUS_CODE, ST_LITIG, ST_PERMIT
+from .model import REAL_STATUS_CODE, ST_LITIG, ST_OPER, ST_PERMIT, ST_WAIT
 from .montecarlo import run_ensemble
 from .policy import STATUS_QUO
 
@@ -34,6 +34,17 @@ def _check(id_, label, question, observed, sim, unit, src, kind, passed, note=""
 
 def _within(obs, sim, tol):
     return abs(sim["p50"] - obs) <= tol * obs or sim["p5"] <= obs <= sim["p95"]
+
+
+def _naive_status(p: C.Project) -> int:
+    """Regla trivial para comparar: lista del CEN espera; anunciado hace 3+ años opera."""
+    if p.extra.get("request_mw"):
+        return ST_WAIT
+    return ST_OPER if p.announce <= C.ym_str(C.NOW - 36) else ST_PERMIT
+
+
+def _hit(model_code: int, real_code: int) -> bool:
+    return model_code == real_code or (real_code == ST_PERMIT and model_code == ST_LITIG)
 
 
 def run_validation(n: int = 200, use_cache: bool = True) -> dict:
@@ -111,7 +122,8 @@ def run_validation(n: int = 200, use_cache: bool = True) -> dict:
         "¿Cuántos MW quedaron esperando conexión en el CEN en 2026?",
         o, sim, "MW",
         OBS["waitlist_2026"]["src"], "calibración", _within(o, sim, 0.15),
-        "La capacidad libre de cada nodo es un supuesto ajustado a este dato."))
+        "La capacidad libre de cada nodo es un supuesto ajustado a este dato, y dos proyectos "
+        "supuestos completan los 6 proyectos y 1.420 MW del CEN: se cumple casi por construcción."))
     o = OBS["waitlist_2026"]["n"]
     sim = _band(S["waitlist_n"], 2026)
     checks.append(_check(
@@ -145,29 +157,35 @@ def run_validation(n: int = 200, use_cache: bool = True) -> dict:
         {"top4": [C.COMMUNES[C.COMMUNE_IDX[c]].name for c in top], "hits": hits}, "comunas",
         OBS["organized_opposition"]["src"], "validación", hits >= 3,
         "El modelo no sabe dónde hubo conflicto: lo deduce de la cercanía, el agua y la "
-        "acumulación."))
+        "acumulación. Pero los barrios sintéticos se ubicaron donde hay viviendas junto a sitios "
+        "conocidos (Valle Grande, La Pincoya, Lonquén), así que no es una prueba ciega."))
     # Estado de cada proyecto conocido
     probs = np.array(res["projects"]["status_prob"])[:, _yi(2026), :]
-    rows, ok = [], 0
+    rows, ok, ok_naive = [], 0, 0
     for i, p in enumerate(C.PROJECTS):
         if p.real_status is None:
             continue
         real_code = REAL_STATUS_CODE[p.real_status]
         mode_code = int(probs[i].argmax())
-        hit = mode_code == real_code or (real_code == ST_PERMIT and mode_code == ST_LITIG)
+        hit = _hit(mode_code, real_code)
         ok += hit
+        ok_naive += _hit(_naive_status(p), real_code)
         rows.append({"id": p.id, "name": p.name, "real": p.real_status, "model": mode_code,
                      "p_real": round(float(probs[i, real_code]), 2), "hit": bool(hit),
                      "anonymous": p.anonymous})
     acc = ok / len(rows)
+    acc_naive = ok_naive / len(rows)
     named = [r for r in rows if not r["anonymous"]]
     acc_named = sum(r["hit"] for r in named) / len(named)
     checks.append(_check(
         "status", "Estado de cada proyecto conocido a noviembre de 2026",
         "¿Acierta el modelo qué proyectos están operando, en obra, en trámite o esperando?",
         len(rows), {"accuracy": round(100 * acc, 1), "accuracy_named": round(100 * acc_named, 1),
-                    "rows": rows}, "%", "Informe (estado a nov-2026)", "validación", acc >= 0.8,
-        "Se compara el estado más probable en 200 simulaciones con el estado real."))
+                    "naive": round(100 * acc_naive, 1), "rows": rows}, "%",
+        "Informe (estado a nov-2026)", "validación", acc > acc_naive,
+        "Se compara el estado más probable en 200 simulaciones con el estado real. Pasa si "
+        f"acierta más que una regla trivial (lista del CEN espera; anunciado hace 3 o más años "
+        f"opera), que acierta {round(100 * acc_naive)}%."))
     return {"checks": checks, "n": res["meta"]["n"],
             "passed": sum(c["pass"] for c in checks), "total": len(checks),
             "series": {k: res["series"][k] for k in ("demand_rm_dec", "it_chile_jun",

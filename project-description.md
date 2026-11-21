@@ -15,15 +15,15 @@ Aterriza pone todos los proyectos reales en un solo modelo y proyecta qué le pa
 
 ## Lo que encontramos en 15.080 simulaciones
 
-- **El freno es la red, no el permiso.** Con permisos cuatro veces más rápidos, Santiago tendría solo 2% más data centers en 2030. Los proyectos aprobados igual esperan conexión eléctrica.
-- **No hay que elegir entre inversión y comunidad.** Enfriamiento por aire, un fondo comunitario y un incentivo al norte mejoran las seis cifras a la vez en 92% de los futuros. El costo es la cuenta de la luz: sube 3,7% en vez de 3,1%.
-- **El agua decide el juicio.** Si Google hubiera enfriado Cerrillos con aire en 2019, la probabilidad de juicio bajaba de 79% a 3%, y estaría operando desde 2022.
-- **Dónde importa más que cuánto.** Alejar un solo proyecto de las casas baja 56% el conflicto de toda Lampa.
-- **Más proyectos, más espera.** Si llegan el doble de proyectos, se conecta solo 19% más, pero los juicios se multiplican por 2,6.
+- **El freno es la red, no el permiso.** Con permisos cuatro veces más rápidos, Santiago tendría solo 0,4% más data centers en 2030. Los proyectos aprobados igual esperan conexión eléctrica.
+- **No hay que elegir entre inversión y comunidad.** Enfriamiento por aire, un fondo comunitario y un incentivo al norte mejoran a la vez agua, conflicto, juicios e inversión en 84% de los futuros, y la cuenta de la luz no sube más (1,8% en vez de 2,0%) porque parte de la demanda se va al norte, donde sobra energía solar.
+- **El agua decide el juicio.** Si Google hubiera enfriado Cerrillos con aire en 2019, la probabilidad de juicio bajaba de 83% a 2%, y estaría operando desde 2022.
+- **Dónde importa más que cuánto.** Alejar un solo proyecto de las casas baja 60% el conflicto de toda Lampa.
+- **Más proyectos, más espera.** Si llegan el doble de proyectos, se conecta solo 19% más, pero los juicios se multiplican por 2,3.
 
 ## ¿Le podemos creer?
 
-Al modelo le dimos solo cuándo se anunció cada proyecto real; él decidió cuándo se aprobaba, se construía, se iba a tribunales o quedaba esperando red. Reproduce **14 de 14 datos reales** de 2012 a 2026:
+Al modelo le dimos cada proyecto real (tamaño, lugar, enfriamiento) y cuándo se anunció; él decidió cuándo se aprobaba, se construía, se iba a tribunales o quedaba esperando red. Reproduce **14 de 14 datos reales** de 2012 a 2026 (7 de validación y 7 de calibración), por ejemplo:
 
 - el consumo eléctrico de los data centers de Santiago: 90 MW en 2021 y 260 MW en 2025;
 - el agua de Google en Quilicura: 458 millones de litros en 2024;
@@ -31,7 +31,7 @@ Al modelo le dimos solo cuándo se anunció cada proyecto real; él decidió cu�
 - los 2 juicios ambientales;
 - las 4 comunas con vecinos organizados.
 
-Cada chequeo dice si fue validación (el modelo nunca vio ese dato) o calibración (un parámetro se ajustó con él).
+Cada chequeo dice si fue validación (el modelo nunca vio ese dato) o calibración (un parámetro se ajustó con él), y cuáles son sus límites.
 
 ## Cómo funciona
 
@@ -40,7 +40,7 @@ Un modelo de agentes con stocks y flujos que avanza mes a mes desde 2012:
 - **62 proyectos reales** (33 con nombre público) y unos 5 nuevos al año, que eligen comuna, enfriamiento y cuánto diésel declarar.
 - **El SEA**, que manda cada proyecto al SEIA o a pertinencia según el umbral de 1.000 t del DS 17, y **la fila de conexión del CEN**, nodo por nodo.
 - **2.300 hogares sintéticos.** Su oposición crece con la cercanía, el diésel, el miedo por el agua y la acumulación, y baja con empleo y beneficios. Se contagia dentro de la comuna y lleva proyectos a tribunales.
-- **200 futuros por regla**, con números aleatorios comunes. Se reporta la mediana y el rango del 90%.
+- **200 futuros por regla**, con números aleatorios comunes y 13 supuestos inciertos sorteados en cada uno. Se reporta la mediana y el rango del 90%.
 
 Hecho con Python (NumPy, FastAPI) y HTML/JS con Leaflet. Los datos vienen de un informe de investigación de noviembre de 2026, el CEN, la DGA, el SEA y el Censo 2017. Las ecuaciones, los supuestos y lo que no sabemos están a la vista en la sección "Detalle técnico".
 

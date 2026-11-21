@@ -4,7 +4,8 @@
     uv run python -m dcsim.findings    # resume y guarda cache/findings.json
 
 Cada hallazgo informa en qué fracción de los futuros simulados se cumple, comparando
-réplicas con las mismas semillas.
+réplicas con las mismas semillas. Los hallazgos de reglas que la portada muestra (paquete,
+transparencia y fondo) salen de los mismos 200 futuros que la portada, así las cifras coinciden.
 """
 
 from __future__ import annotations
@@ -17,6 +18,8 @@ import numpy as np
 
 from . import catalog as C
 from .explore import OUT as RAW
+from .montecarlo import _code_hash, run_ensemble
+from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS
 
 OUT = RAW.replace("explore_raw.json", "findings.json")
 
@@ -25,9 +28,20 @@ def _f(x: float, nd: int = 0) -> str:
     return f"{x:,.{nd}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+N_ENS = 200  # los mismos futuros que la portada (server.N_PRESET)
+
+
+def _ens(policy) -> dict:
+    """Valores pareados (2030, 2035) por réplica, de los ensambles que usa la portada."""
+    return run_ensemble(policy, n=N_ENS)["paired"]
+
+
 def build(raw: dict) -> list[dict]:
     def A(n, k):
         return np.array([r[k] for r in raw[n]], dtype=float)
+
+    def E(ens, k):  # 2035
+        return np.array(ens[k], dtype=float)[:, 1]
 
     def med(n, k):
         return float(np.nanmedian(A(n, k)))
@@ -38,19 +52,21 @@ def build(raw: dict) -> list[dict]:
     out = []
 
     # 1. Paquete que mejora todo a la vez
-    b, s = "F:como_hoy", "F:aire+fondo+norte"
+    eb, es = _ens(SCENARIOS["status_quo"]["policy"]), _ens(SCENARIOS["paquete"]["policy"])
     keys = [("it_chile_2035", 1), ("invest_realized_2035", 1), ("invest_lost_2035", -1),
             ("conflict_rm_2035", -1), ("litigations_2035", -1), ("water_ls_rm_2035", -1)]
-    ok = np.ones(len(raw[b]), bool)
+    ok = np.ones(len(eb["it_chile"]), bool)
     rel = {}
     for k, sign in keys:
-        d = A(s, k) - A(b, k)
+        k0 = k.removesuffix("_2035")
+        d = E(es, k0) - E(eb, k0)
         ok &= (d >= 0) if sign > 0 else (d <= 0)
-        rel[k] = (med(s, k) - med(b, k)) / med(b, k)
+        rel[k] = (np.median(E(es, k0)) - np.median(E(eb, k0))) / np.median(E(eb, k0))
+    bill_b, bill_s = np.median(E(eb, "bill_pct")), np.median(E(es, "bill_pct"))
     out.append({
         "id": "paquete", "kicker": "No hay que elegir",
-        "headline": (f"3 reglas mejoran las 6 métricas a la vez en {_f(100 * share(ok))}% "
-                     "de los futuros"),
+        "headline": (f"3 reglas mejoran a la vez agua, conflicto, juicios e inversión en "
+                     f"{_f(100 * share(ok))}% de los futuros"),
         "body": (f"Enfriamiento por aire + fondo comunitario + incentivo al norte: "
                  f"{_f(100 * rel['it_chile_2035'], 0)}% más data centers operando, "
                  f"{_f(100 * rel['invest_realized_2035'])}% más inversión, "
@@ -58,9 +74,13 @@ def build(raw: dict) -> list[dict]:
                  f"{_f(-100 * rel['conflict_rm_2035'])}% menos hogares movilizados, "
                  f"{_f(-100 * rel['litigations_2035'])}% menos juicios y "
                  f"{_f(-100 * rel['water_ls_rm_2035'])}% menos agua (2035)."),
-        "cost": (f"El costo: la cuenta de la luz sube {_f(med(s, 'bill_pct_2035'), 1)}% en vez de "
-                 f"{_f(med(b, 'bill_pct_2035'), 1)}%, porque hay más data centers consumiendo."),
-        "stat": f"{_f(100 * share(ok))}%", "stat_label": "de los futuros mejora en todo",
+        "cost": (f"El costo: la cuenta de la luz sube {_f(bill_s, 1)}% en vez de "
+                 f"{_f(bill_b, 1)}%, porque hay más data centers consumiendo." if bill_s > bill_b
+                 else f"Y la cuenta de la luz no sube más: {_f(bill_s, 1)}% en vez de "
+                 f"{_f(bill_b, 1)}%, porque parte de la demanda se va a Antofagasta, donde "
+                 "sobra energía solar (supuesto: allí no presiona la tarifa)."),
+        "stat": f"{_f(100 * share(ok))}%",
+        "stat_label": "de los futuros mejora en todo salvo la cuenta de la luz",
         "action": {"type": "custom", "policy": {"air_cooling_rm": True,
                                                 "community_fund_usd_mw": 20000,
                                                 "north_incentive": 0.6}},
@@ -70,17 +90,18 @@ def build(raw: dict) -> list[dict]:
     # 2. Permisos más rápidos no conectan más
     f, n = "S:permit_speed=0.25", "S:permit_speed=1.0"
     r30 = (med(f, "it_rm_2030") - med(n, "it_rm_2030")) / med(n, "it_rm_2030")
+    nd30 = 1 if abs(100 * r30) < 1.5 else 0  # "+0,5%", no "+0%"
     out.append({
         "id": "permisos", "kicker": "El cuello de botella no es el permiso",
-        "headline": f"Permisos 4 veces más rápidos: solo {_f(100 * r30, 0)}% más data centers en "
-                    "Santiago al 2030",
+        "headline": (f"Permisos 4 veces más rápidos: solo {_f(100 * r30, nd30)}% más data centers "
+                     "en Santiago al 2030"),
         "body": (f"Con permisos 75% más cortos, la RM pasa de {_f(med(n, 'it_rm_2030'))} a "
                  f"{_f(med(f, 'it_rm_2030'))} MW en 2030, y el plazo medio entre anuncio y "
                  "operación baja apenas "
                  f"{_f(med(n, 'delay_mean') - med(f, 'delay_mean'), 1)} meses. "
                  "Los proyectos aprobados igual esperan conexión eléctrica."),
         "cost": "Relevante para la Mesa Permanente (nov-2026), cuyo objetivo es acortar permisos.",
-        "stat": f"+{_f(100 * r30, 0)}%", "stat_label": "MW en la RM con permisos 4× más rápidos",
+        "stat": f"+{_f(100 * r30, nd30)}%", "stat_label": "MW en la RM con permisos 4× más rápidos",
         "action": {"type": "scenario", "id": "mesa"}, "action_label": "Ver “Permisos rápidos”",
     })
 
@@ -103,6 +124,7 @@ def build(raw: dict) -> list[dict]:
                  "juicios. Los proyectos que esperan red generan rechazo sin dejar beneficios."),
         "cost": "La red no crece al ritmo de los anuncios: cada proyecto extra suma espera, no MW.",
         "stat": f"×{_f(lit, 1)}", "stat_label": "juicios con el doble de proyectos",
+        "mw_pct": round(100 * mw),
         "action": {"type": "custom", "policy": {"demand": "alta"}},
         "action_label": "Simular el boom de IA",
     })
@@ -153,10 +175,12 @@ def build(raw: dict) -> list[dict]:
     })
 
     # 6. Transparencia vs dinero
-    t, fo = "F:transparencia", "F:fondo"
-    rt = (med(t, "conflict_rm_2035") - med(b, "conflict_rm_2035")) / med(b, "conflict_rm_2035")
-    rf = (med(fo, "conflict_rm_2035") - med(b, "conflict_rm_2035")) / med(b, "conflict_rm_2035")
-    cost = 20_000 * med(b, "it_rm_2035") / 1e6
+    et = _ens(HYPOTHESIS_SCENARIOS["solo_transparencia"])
+    ef = _ens(HYPOTHESIS_SCENARIOS["solo_fondo"])
+    cb = np.median(E(eb, "conflict_rm"))
+    rt = (np.median(E(et, "conflict_rm")) - cb) / cb
+    rf = (np.median(E(ef, "conflict_rm")) - cb) / cb
+    cost = 20_000 * np.median(E(eb, "it_rm")) / 1e6
     out.append({
         "id": "transparencia", "kicker": "Información vs plata",
         "headline": f"Publicar el uso real de agua baja el conflicto tanto como pagar "
@@ -175,21 +199,24 @@ def build(raw: dict) -> list[dict]:
     cnt = Counter(C.COMMUNES[int(r["top_conflict_2035"])].name for r in raw["P:base"])
     top = cnt.most_common(4)
     n = len(raw["P:base"])
+    common = [k for k, c in cnt.items() if c >= 0.05 * n]  # descarta casos de 1 en 200
     out.append({
         "id": "trayectoria", "kicker": "No hay destino escrito",
-        "headline": f"{len(cnt)} comunas distintas pueden terminar como la más afectada en 2035",
+        "headline": (f"{len(common)} comunas distintas pueden terminar como la más afectada en "
+                     "2035 (cada una en al menos 5% de los futuros)"),
         "body": ("En 200 futuros con las mismas reglas, la comuna con más hogares movilizados "
                  "cambia según el orden en que llegan los proyectos: " +
                  ", ".join(f"{name} ({_f(100 * k / n)}%)" for name, k in top) +
                  ". La 'comuna de sacrificio' se decide en el camino, no en el mapa."),
         "cost": "Por eso una evaluación proyecto por proyecto no puede anticiparla.",
-        "stat": str(len(cnt)), "stat_label": "comunas posibles de sacrificio",
+        "stat": str(len(common)), "stat_label": "comunas posibles de sacrificio",
         "action": {"type": "scenario", "id": "status_quo", "metric": "c_conflict"},
         "action_label": "Ver el conflicto en el mapa",
     })
     n_sims = sum(len(v) for v in raw.values())
     for x in out:
         x["n_sims"] = n_sims
+        x["model"] = _code_hash()  # tests/test_invariants.py exige que coincida con el código
     return out
 
 

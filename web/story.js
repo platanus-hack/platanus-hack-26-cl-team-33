@@ -22,7 +22,8 @@ const BANDS = {
   conflict_rm: { show: (v) => `${fmt(100 * v)}%`, goodUp: false, points: true, scale: 100 },
   litigations: { show: (v) => fmt(v), goodUp: false },
   invest_lost: { show: money, goodUp: false },
-  bill_pct: { show: (v) => `+${fmt(v, 1)}%`, goodUp: false, points: true, scale: 1 },
+  bill_pct: { show: (v) => `+${fmt(v, 1)}%`, goodUp: false, points: true, scale: 1,
+    note: (vals, r) => (r ? `respecto de 2025 · en 9 de cada 10 futuros, entre +${fmt(r[0], 1)}% y +${fmt(r[1], 1)}%` : "respecto de 2025") },
 };
 const KEYS = ["it_chile", "dc_share_national", "water_ls_rm", "conflict_rm", "litigations", "invest_lost", "bill_pct"];
 // Cada capa tiene su propio tono (validado contra daltonismo): naranjo = conflicto, azul = agua,
@@ -112,6 +113,12 @@ function select(id) {
   loadEnsemble(id).then(updateMap).catch(() => {});
 }
 
+function rangeFor(id, k) {  // [p5, p95] de una cifra en 2035
+  if (id === "custom") { const s = S.ens.custom && S.ens.custom.series[k]; return s ? [s.p5[yi(2035)], s.p95[yi(2035)]] : null; }
+  const tab = S.story.tabs.find((t) => t.id === id);
+  return tab && tab.values[k] ? [tab.values[k].p5, tab.values[k].p95] : null;
+}
+
 function valuesFor(id) {
   if (id === "custom") return S.customValues;
   const tab = S.story.tabs.find((t) => t.id === id);
@@ -132,7 +139,7 @@ function renderNumbers(animate) {
     if (id === "status_quo") summary += " Es el punto de comparación de las otras reglas.";
     if (id === "paquete") {
       const f = (S.story.findings || []).find((x) => x.id === "paquete");
-      if (f) summary += ` <b>Mejora las seis cifras a la vez en ${esc(f.stat)} de los futuros.</b>`;
+      if (f) summary += ` <b>Mejora a la vez agua, vecinos movilizados, juicios e inversión en ${esc(f.stat)} de los futuros.</b>`;
     }
   }
   $("#ruleSummary").innerHTML = summary;
@@ -146,7 +153,7 @@ function renderNumbers(animate) {
     const val = band.querySelector(".val");
     val.textContent = spec.show(vals[k]);
     if (animate && !reduced) { val.classList.remove("tick"); void val.offsetWidth; val.classList.add("tick"); }
-    if (spec.note) band.querySelector(".note").textContent = spec.note(vals);
+    if (spec.note) band.querySelector(".note").textContent = spec.note(vals, rangeFor(id, k));
     band.querySelector(".delta").innerHTML = id === "status_quo" ? "" : delta(spec, vals[k], base[k]);
   });
 }
@@ -466,7 +473,7 @@ function showProject(i) {
   const real = { operando: "operando", construccion: "en construcción", tramitacion: "en tramitación", lista_espera: "esperando red" }[p.real_status];
   const rows = pr.map((v, k) => ({ v, k })).filter((o) => o.v >= 0.05).sort((a, b) => b.v - a.v);
   infoPanel(`<h3>${esc(p.name)}</h3>
-    <p class="info-sub">${esc(p.operator)} · ${fmt(p.it_mw, p.it_mw % 1 ? 1 : 0)} MW · enfriamiento por ${esc(p.cooling)}${p.dist_homes_m ? ` · ${fmt(p.dist_homes_m)} m de viviendas` : ""}</p>
+    <p class="info-sub">${esc(p.operator)} · ${fmt(p.it_mw, p.it_mw % 1 ? 1 : 0)} MW de servidores${p.request_mw ? ` (pide ${fmt(p.request_mw)} MW de conexión)` : ""} · enfriamiento por ${esc(p.cooling)}${p.dist_homes_m ? ` · ${fmt(p.dist_homes_m)} m de viviendas` : ""}</p>
     ${real ? `<p>Estado real en noviembre de 2026: <b>${real}</b></p>` : ""}
     <p>En ${y}, en los futuros simulados:</p>
     <dl>${rows.map((o) => `<dt>${labels[o.k]}</dt><dd>${fmt(100 * o.v)}%</dd>`).join("")}</dl>
@@ -499,6 +506,9 @@ function fillFindings() {
   if (byId.permisos) set("permisos", byId.permisos.stat.replace("+", ""));
   if (byId.cerrillos) set("cerrillos", byId.cerrillos.stat.replace(" → ", " a "));
   if (byId.boom) set("boom", byId.boom.stat.replace("×", ""));
+  if (byId.boom && byId.boom.mw_pct !== undefined) set("boom-mw", `${fmt(byId.boom.mw_pct)}%`);
+  const n = (S.story.findings || [])[0];
+  if (n) $("#closeStats").textContent = `${fmt(n.n_sims)} simulaciones, 200 futuros por regla, ${S.story.passed} de ${S.story.total} chequeos con datos reales.`;
 }
 
 function fillMoreFindings() {
@@ -512,6 +522,7 @@ function fillMoreFindings() {
 
 function fillProof() {
   $("#passed").textContent = `${S.story.passed} de ${S.story.total}`;
+  if (S.story.n_validation !== undefined) $("#passedKinds").textContent = `(${S.story.n_validation} de validación y ${S.story.n_calibration} de calibración)`;
   const LABEL = {
     rm_2021: [2021, "Electricidad de los data centers de Santiago", "MW"],
     google_water: [2024, "Agua usada por Google en Quilicura", "ML"],
@@ -551,7 +562,7 @@ const lazy = {
       if (x.p50 !== undefined) return `${n(x.p50)} <span class="range">(${n(x.p5)} a ${n(x.p95)})</span>`;
       if (x.low !== undefined) return `${n(x.low)} a ${n(x.high)}`;
       if (x.top4) return esc(x.top4.join(", "));
-      if (x.accuracy !== undefined) return `${n(x.accuracy)}% de acierto`;
+      if (x.accuracy !== undefined) return `${n(x.accuracy)}% de acierto${x.naive !== undefined ? ` (regla trivial: ${n(x.naive)}%)` : ""}`;
       return "";
     };
     $("#checksBody").innerHTML = `<p>${v.passed} de ${v.total} coinciden. <b>Validación</b>: el modelo nunca se ajustó a ese dato. <b>Calibración</b>: un parámetro se ajustó usando ese dato.</p>
@@ -561,8 +572,8 @@ const lazy = {
   }),
   supuestos: () => {
     const nd = (x) => (Math.abs(x) < 1 && x !== 0 ? 2 : Math.abs(x) < 10 ? 1 : 0);
-    $("#paramsBody").innerHTML = `<table class="data"><thead><tr><th>Supuesto</th><th>Valor</th><th>Rango</th><th>Tipo</th><th>Fuente</th></tr></thead><tbody>${
-      S.meta.params.map((p) => `<tr><td>${esc(p.label)}</td><td>${fmt(p.base, nd(p.base))} ${p.unit === "—" ? "" : esc(p.unit)}</td><td>${fmt(p.low, nd(p.low))} a ${fmt(p.high, nd(p.high))}</td><td>${esc(p.kind)}</td><td>${esc(p.src)}</td></tr>`).join("")
+    $("#paramsBody").innerHTML = `<table class="data"><thead><tr><th>Supuesto</th><th>Valor</th><th>Rango</th><th>¿Se sortea?</th><th>Tipo</th><th>Fuente</th></tr></thead><tbody>${
+      S.meta.params.map((p) => `<tr><td>${esc(p.label)}</td><td>${fmt(p.base, nd(p.base))} ${p.unit === "—" ? "" : esc(p.unit)}</td><td>${fmt(p.low, nd(p.low))} a ${fmt(p.high, nd(p.high))}</td><td>${p.sample ? "sí" : "no"}</td><td>${esc(p.kind)}</td><td>${esc(p.src)}</td></tr>`).join("")
       }</tbody></table>`;
     return Promise.resolve();
   },

@@ -8,21 +8,23 @@ from __future__ import annotations
 import json
 import os
 import threading
+from collections import Counter, OrderedDict
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 from . import catalog as C
 from .insights import METRICS, hypotheses, scenario_deltas, winners_losers
-from .model import STATUS_LABELS
+from .model import STATUS_LABELS, SYNTH_RATE_MAX
 from .montecarlo import run_ensemble
-from .params import PARAMS
-from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS, policy_from_dict
+from .params import PARAMS, P
+from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS, Policy
 from .validation import run_validation
 
 N_PRESET = 200
@@ -81,6 +83,13 @@ def _warm() -> None:
     threading.Thread(target=work, daemon=True).start()
 
 
+def _it_mw(p: C.Project) -> float:
+    """Potencia TI. Para la lista de espera del CEN el catálogo trae la potencia de conexión."""
+    if p.extra.get("request_mw"):
+        return round(p.it_mw / (P["pue_air"].base * P["peak_pue_ratio"].base), 1)
+    return p.it_mw
+
+
 @app.get("/api/meta")
 def meta() -> dict:
     return {
@@ -92,7 +101,9 @@ def meta() -> dict:
                       "radius_km": c.radius_km}
                      for c in C.COMMUNES],
         "projects": [{"id": p.id, "name": p.name, "operator": p.operator, "commune": p.commune,
-                      "lat": p.lat, "lon": p.lon, "it_mw": p.it_mw, "cooling": p.cooling,
+                      "lat": p.lat, "lon": p.lon, "it_mw": _it_mw(p),
+                      "request_mw": p.it_mw if p.extra.get("request_mw") else None,
+                      "cooling": p.cooling,
                       "fuel_t": p.fuel_t, "real_status": p.real_status,
                       "anonymous": p.anonymous, "pre_existing": p.pre_existing,
                       "announce": p.announce, "water_right_ls": p.water_right_ls,
@@ -115,15 +126,44 @@ def scenario(sid: str) -> dict:
     return _scenario(sid)
 
 
+class PolicyIn(BaseModel):
+    """Regla propia: los mismos campos que ``Policy``, con tipos y rangos acotados."""
+
+    model_config = ConfigDict(extra="forbid")
+    fuel_threshold_t: float = Field(1000.0, ge=0, le=10_000)
+    cumulative: StrictBool = False
+    window_months: int = Field(12, ge=1, le=60)
+    water_cap_ls: float | None = Field(None, ge=0, le=1_000)
+    permit_speed: float = Field(1.0, ge=0.1, le=3.0)
+    air_cooling_rm: StrictBool = False
+    north_incentive: float = Field(0.0, ge=0, le=1)
+    community_fund_usd_mw: float = Field(0.0, ge=0, le=200_000)
+    transparency: StrictBool = False
+    demand: Literal["baja", "base", "alta"] = "base"
+    climate: Literal["moderado", "base", "severo"] = "base"
+    demand_rate: float | None = Field(None, ge=0, le=SYNTH_RATE_MAX)
+
+
 class RunRequest(BaseModel):
-    policy: dict
+    policy: PolicyIn
+
+
+_CUSTOM_MAX = 16  # reglas propias en memoria (el plan free tiene 512 MB)
+_custom: OrderedDict = OrderedDict()
+_custom_lock = threading.Lock()
 
 
 @app.post("/api/run")
 def run_custom(req: RunRequest) -> dict:
-    pol = policy_from_dict(req.policy)
-    key = ("custom", tuple(sorted(pol.to_dict().items())))
-    return _cached(key, lambda: run_ensemble(pol, n=N_CUSTOM))
+    pol = Policy(**req.policy.model_dump())
+    key = tuple(sorted(pol.to_dict().items()))
+    with _custom_lock:  # una simulación a la vez: la CPU es una sola
+        if key not in _custom:
+            _custom[key] = run_ensemble(pol, n=N_CUSTOM, use_cache=False)
+            while len(_custom) > _CUSTOM_MAX:
+                _custom.popitem(last=False)
+        _custom.move_to_end(key)
+        return _custom[key]
 
 
 @app.get("/api/validation")
@@ -180,7 +220,9 @@ def story() -> dict:
             })
         val = _cached("validation", lambda: run_validation(n=N_PRESET))
         checks = {c["id"]: c for c in val["checks"]}
+        kinds = Counter(c["kind"] for c in val["checks"])
         return {"year": 2035, "tabs": tabs, "passed": val["passed"], "total": val["total"],
+                "n_validation": kinds["validación"], "n_calibration": kinds["calibración"],
                 "n_custom": N_CUSTOM,
                 "checks": [checks[i] for i in STORY_CHECKS if i in checks],
                 "findings": findings()}

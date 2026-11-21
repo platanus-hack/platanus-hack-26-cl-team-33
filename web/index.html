@@ -112,7 +112,7 @@
             <div class="band" data-k="conflict_rm" data-metric="c_conflict"><div><b>Vecinos movilizados en contra</b><span class="note">de los hogares en comunas con data centers</span></div><span class="val">…</span><span class="delta"></span></div>
             <div class="band" data-k="litigations"><div><b>Juicios contra proyectos</b><span class="note">acumulados desde 2012</span></div><span class="val">…</span><span class="delta"></span></div>
             <div class="band" data-k="invest_lost"><div><b>Inversión perdida</b><span class="note">proyectos que no encuentran red y se van de Chile</span></div><span class="val">…</span><span class="delta"></span></div>
-            <div class="band" data-k="bill_pct"><div><b>Alza de la cuenta de la luz</b><span class="note">respecto de 2025; hipótesis con rango amplio</span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-k="bill_pct"><div><b>Alza de la cuenta de la luz</b><span class="note" data-bill-note>respecto de 2025; hipótesis con rango amplio</span></div><span class="val">…</span><span class="delta"></span></div>
           </div>
           <p class="sim-foot">Cifras para 2035: valor típico de 200 futuros simulados por regla. La historia hasta noviembre de 2026 es la real.</p>
         </div>
@@ -125,7 +125,7 @@
         <div class="field">
           <h2 class="ch-title">El freno es la red, no el permiso</h2>
           <img class="ch-photo" src="/static/img/torres-charrua-1.jpg" width="1920" height="3413" alt="Torres de alta tensión junto a un camino seco en Charrúa" loading="lazy">
-          <p class="ch-text">Con permisos cuatro veces más rápidos, Santiago tendría apenas <b data-f="permisos">2%</b> más data centers en 2030. Los proyectos aprobados igual esperan conexión eléctrica.</p>
+          <p class="ch-text">Con permisos cuatro veces más rápidos, Santiago tendría apenas <b data-f="permisos">0,4%</b> más data centers en 2030. Los proyectos aprobados igual esperan conexión eléctrica.</p>
           <a class="ch-link" href="#simular" data-tab="mesa">Probar permisos rápidos</a>
         </div>
       </article>
@@ -133,7 +133,7 @@
         <div class="field">
           <h2 class="ch-title">El agua decide el juicio</h2>
           <img class="ch-photo" src="/static/img/canal-ortuzano-estacion-central-y-cerrillos-santiago.jpg" width="1920" height="1280" alt="Canal Ortuzano entre Estación Central y Cerrillos" loading="lazy">
-          <p class="ch-text">Si Google hubiera enfriado Cerrillos con aire en 2019, la probabilidad de juicio pasaba de <b data-f="cerrillos">79% a 3%</b> y estaría operando desde 2022.</p>
+          <p class="ch-text">Si Google hubiera enfriado Cerrillos con aire en 2019, la probabilidad de juicio pasaba de <b data-f="cerrillos">83% a 2%</b> y estaría operando desde 2022.</p>
           <a class="ch-link" href="#simular" data-project="google_cerrillos" data-year="2024">Ver Cerrillos en el mapa</a>
         </div>
       </article>
@@ -141,7 +141,7 @@
         <div class="field">
           <h2 class="ch-title">Más proyectos, más espera</h2>
           <img class="ch-photo" src="/static/img/rear-of-rack-at-nersc-data-center.jpg" width="1920" height="2889" alt="Parte trasera de un rack de servidores con cables" loading="lazy">
-          <p class="ch-text">Si llegan el doble de proyectos, se conecta solo 19% más, pero los juicios se multiplican por <b data-f="boom">2,6</b>. La red no crece al ritmo de los anuncios.</p>
+          <p class="ch-text">Si llegan el doble de proyectos, se conecta solo <span data-f="boom-mw">19%</span> más, pero los juicios se multiplican por <b data-f="boom">2,3</b>. La red no crece al ritmo de los anuncios.</p>
           <a class="ch-link" href="#mas-hallazgos" data-open="mas-hallazgos">Ver los otros hallazgos</a>
         </div>
       </article>
@@ -150,13 +150,13 @@
     <!-- La prueba -->
     <section class="proof" id="prueba" aria-labelledby="proof-title">
       <h2 id="proof-title" class="head stepped" data-rise><span>Probado con</span><span>lo que ya pasó</span></h2>
-      <p class="proof-lead" data-rise>Al modelo le dimos solo cuándo se anunció cada proyecto real. Él decidió cuándo se aprobaba, se construía o se iba a tribunales. Coincide en <b id="passed">14 de 14</b> datos.</p>
+      <p class="proof-lead" data-rise>Al modelo le dimos cada proyecto real (tamaño, lugar, enfriamiento) y cuándo se anunció. Él decidió cuándo se aprobaba, se construía o se iba a tribunales. Coincide en <b id="passed">14 de 14</b> datos <span id="passedKinds">(7 de validación y 7 de calibración)</span>.</p>
       <table class="proof-table" data-rise>
         <thead><tr><th scope="col">Año</th><th scope="col">Dato</th><th scope="col">Real</th><th scope="col">Modelo</th><th scope="col">Fuente</th></tr></thead>
         <tbody id="proofRows">
-          <tr><td>2021</td><td>Electricidad de los data centers de Santiago</td><td data-label="Real">90 MW</td><td data-label="Modelo">105 MW</td><td>Ministerio de Energía, CEN</td></tr>
-          <tr><td>2024</td><td>Agua usada por Google en Quilicura</td><td data-label="Real">458 ML</td><td data-label="Modelo">488 ML</td><td>Google</td></tr>
-          <tr><td>2025</td><td>Electricidad de los data centers de Santiago</td><td data-label="Real">260 MW</td><td data-label="Modelo">252 MW</td><td>Ministerio de Energía, CEN</td></tr>
+          <tr><td>2021</td><td>Electricidad de los data centers de Santiago</td><td data-label="Real">90 MW</td><td data-label="Modelo">104 MW</td><td>Ministerio de Energía, CEN</td></tr>
+          <tr><td>2024</td><td>Agua usada por Google en Quilicura</td><td data-label="Real">458 ML</td><td data-label="Modelo">484 ML</td><td>Google</td></tr>
+          <tr><td>2025</td><td>Electricidad de los data centers de Santiago</td><td data-label="Real">260 MW</td><td data-label="Modelo">254 MW</td><td>Ministerio de Energía, CEN</td></tr>
           <tr><td>2026</td><td>MW esperando conexión a la red</td><td data-label="Real">1.420</td><td data-label="Modelo">1.420</td><td>CEN</td></tr>
           <tr><td></td><td>Juicios contra data centers desde 2012</td><td data-label="Real">2</td><td data-label="Modelo">2</td><td>Tribunales Ambientales</td></tr>
           <tr><td></td><td>Comunas con vecinos organizados</td><td data-label="Real">4</td><td data-label="Modelo">las mismas 4</td><td>Informe, nov-2026</td></tr>
@@ -191,7 +191,7 @@
             <li><b>Operación.</b> Usa electricidad y agua, prueba sus generadores diésel y paga patentes.</li>
           </ol>
           <p><b>El bucle que una planilla no ve.</b> Los hogares cercanos sienten ruido, diésel, miedo por el agua y la acumulación de proyectos, y reciben empleo, patentes y fondos. Su oposición se contagia en la comuna, puede llevar un proyecto a tribunales y atrasarlo o anularlo, y cambia dónde eligen instalarse los siguientes.</p>
-          <p>Cada regla se simula 200 veces. Los parámetros inciertos se sortean en cada futuro, y todas las reglas usan los mismos números aleatorios, así la diferencia entre reglas es efecto de la regla y no del azar. Se reporta el valor típico (mediana) y el rango donde cae el 90% de los futuros.</p>
+          <p>Cada regla se simula 200 veces. Los supuestos más inciertos (marcados en «Supuestos») se sortean en cada futuro y el resto queda en su valor central. Todas las reglas usan los mismos números aleatorios, así la diferencia entre reglas es efecto de la regla y no del azar. Se reporta el valor típico (mediana) y el rango donde cae el 90% de los futuros.</p>
         </div>
       </details>
       <details id="matematica" data-rise>
@@ -201,7 +201,7 @@
       <details id="vacios" data-rise>
         <summary>Lo que no sabemos</summary>
         <div class="detail-body prose">
-          <p>Estos vacíos de información se tratan como supuestos con rango, y su incertidumbre entra en los 200 futuros.</p>
+          <p>Estos vacíos de información se tratan como supuestos con rango. Los que más pesan en las reglas (opinión, beneficios, efecto de la evaluación conjunta y de la transparencia, tarifa) se sortean en cada uno de los 200 futuros; el resto queda fijo en su valor central.</p>
           <ul>
             <li>Consumo real de agua y electricidad por data center: solo hay datos de Google Quilicura y del CEN.</li>
             <li>Recarga del acuífero y conexión acuífero–humedal en Quilicura: el nivel del acuífero es un índice, no una predicción en metros.</li>
@@ -258,14 +258,14 @@
             <li><var>W<sub>c</sub></var>: agua percibida sobre el agua que usan los hogares de la comuna, × 1,5 si el acuífero está en zona de prohibición. Sin transparencia se percibe el derecho de agua; con transparencia, el uso real (≈ 29% del derecho).</li>
             <li><var>F<sub>c</sub></var>: parte de la electricidad de la comuna que usan los data centers (la acumulación).</li>
             <li><var>B<sub>c</sub></var>: 0,04 × empleos locales por cada 1.000 hogares + dólares por hogar al año (patentes y fondo) / 100.</li>
-            <li><var>T<sub>c</sub></var>: desconfianza. Sube 0,15 con cada pertinencia sin participación, 0,03 con cada SEIA, baja 0,1 con evaluación conjunta y decae 1% al mes.</li>
-            <li><var>s<sub>i</sub></var>, <var>v<sub>i</sub></var>, <var>θ<sub>i</sub></var>: sensibilidad, valoración de beneficios y umbral de cada hogar (<var>θ</var> entre 0,35 y 0,7). <var>λ</var> = 0,12 por mes, <var>β</var> entre 0,5 y 1,5. <var>σ</var>(<var>z</var>) = 1 / (1 + e<sup>−<var>z</var></sup>).</li>
+            <li><var>T<sub>c</sub></var>: desconfianza. Sube 0,15 con cada pertinencia sin participación, 0,03 con cada SEIA, baja entre 0 y 0,2 con cada aprobación conjunta y entre 0,05 y 0,25 en la RM si hay transparencia; decae 1% al mes.</li>
+            <li><var>s<sub>i</sub></var>, <var>v<sub>i</sub></var>, <var>θ<sub>i</sub></var>: sensibilidad, valoración de beneficios y umbral de cada hogar (<var>θ</var> entre 0,35 y 0,7). <var>λ</var> entre 0,06 y 0,2 por mes, <var>β</var> entre 0,5 y 1,5. <var>σ</var>(<var>z</var>) = 1 / (1 + e<sup>−<var>z</var></sup>).</li>
           </ul>
 
           <h3>Juicios</h3>
           <p class="eq"><var>p</var><sub>juicio</sub> = 0,02 + 3 · <var>L</var><sup>2</sup> · <var>G</var>, con <var>G</var> = 0,3 + 0,7 · máx(1,5 · [agua de acuífero], [casas a menos de 300 m], [línea de alta tensión])</p>
           <p class="eq"><var>p</var><sub>anulación</sub> = 0,25 · (1 + 2 · [agua de acuífero])</p>
-          <p class="where"><var>L</var>: fracción de vecinos movilizados a menos de 1,5 km del proyecto. Con evaluación conjunta, <var>p</var><sub>juicio</sub> × 0,35 y <var>p</var><sub>anulación</sub> × 0,4. Un juicio dura 26 meses típicos; la empresa espera el fallo con probabilidad 0,85. Si se anula, rediseña con aire (70%) o desiste.</p>
+          <p class="where"><var>L</var>: fracción de vecinos movilizados a menos de 1,5 km del proyecto. Con evaluación conjunta, <var>p</var><sub>juicio</sub> × 0,2 a 0,5 y <var>p</var><sub>anulación</sub> × 0,2 a 0,6 (supuestos sin dato chileno, sorteados en cada futuro). Un juicio dura 26 meses típicos; la empresa espera el fallo con probabilidad 0,85. Si se anula, rediseña con aire (70%) o desiste.</p>
 
           <h3>Acuífero</h3>
           <p class="eq"><var>h</var> ← <var>h</var> + (tendencia + anomalía − recorte · recarga) / 12 − <var>V</var><sub>DC</sub> / (<var>S</var> · <var>A</var>)</p>
@@ -273,7 +273,7 @@
 
           <h3>Cuenta de la luz</h3>
           <p class="eq">Δcuenta = 100 · [0,7 · <var>ε</var> · (<var>s<sub>t</sub></var> − <var>s</var><sub>2025</sub>) + 0,1 · <var>α</var> · 0,1 · 0,25 · Δ<var>MW</var> / 700]</p>
-          <p class="where"><var>s</var>: parte de la electricidad de Chile que usan los data centers. <var>ε</var> entre 0 y 0,5: cuánto sube el precio por la demanda nueva (hipótesis; Yue y Zeng miden +5% en EE.UU.). <var>α</var> entre 0 y 0,4: parte de las obras de red que pagan los hogares.</p>
+          <p class="where"><var>s</var>: parte de la electricidad de Chile que usan los data centers, sin Antofagasta (allí sobra energía solar). <var>ε</var> entre 0 y 0,5: cuánto sube el precio por la demanda nueva (hipótesis; Yue y Zeng miden +5% en EE.UU.). <var>α</var> entre 0 y 0,4: parte de las obras de red que pagan los hogares.</p>
             </template>
 
     <!-- Cierre -->
@@ -286,7 +286,7 @@
       <div class="close-field">
         <h2 id="close-title" class="close-statement" data-rise>Ahora <a href="#simular" data-tab="custom">arma tu propia regla</a>.</h2>
         <p class="close-text" data-rise>Elige cada palanca y mira, comuna por comuna, qué le pasa a la gente hasta 2035.</p>
-        <p class="close-small" data-rise>15.080 simulaciones, 200 futuros por regla, 14 de 14 chequeos con datos reales.<br>Hecho en 36 horas en Platanus Hack 26, Santiago.</p>
+        <p class="close-small" data-rise><span id="closeStats">15.080 simulaciones, 200 futuros por regla, 14 de 14 chequeos con datos reales.</span><br>Hecho en 36 horas en Platanus Hack 26, Santiago.</p>
       </div>
     </section>
   </main>

@@ -46,8 +46,10 @@ PARAMS: list[Param] = [
           "Supuesto (orden de magnitud SEN)", "supuesto", False, "energía"),
     Param("system_growth", "Crecimiento anual de la demanda nacional", 0.025, 0.015, 0.035,
           "1/año", "Supuesto", "supuesto", False, "energía"),
-    Param("price_elasticity", "Alza de la tarifa por cada 1% de demanda DC no cubierta", 0.25,
-          0.0, 0.5, "—", "Yue & Zeng: +5% en EE.UU. (no transferible). Vacío A8.", "supuesto",
+    Param("price_elasticity", "Traspaso a la tarifa del aumento de la parte de los DC en la "
+          "demanda nacional", 0.25,
+          0.0, 0.5, "—", "Yue & Zeng: +5% en EE.UU. (no transferible). Vacío A8. Sin la demanda "
+          "de Antofagasta, donde sobra energía solar.", "supuesto",
           True, "energía"),
     Param("reg_alloc_share", "Fracción de obras de red pagada por clientes regulados", 0.2,
           0.0, 0.4, "—", "Hipótesis Neto (no cuantificada). Vacío A8.", "supuesto", True,
@@ -93,9 +95,21 @@ PARAMS: list[Param] = [
     Param("p_pause", "Prob. de que la empresa espere el fallo antes de construir", 0.85, 0.6,
           0.95, "—", "Google no construyó Cerrillos durante el litigio", "supuesto", False,
           "permisos"),
+    # --- Efectos de las reglas (sin dato chileno: se sortean para que su incertidumbre se vea)
+    Param("lit_factor_cum", "Litigios con evaluación conjunta (factor sobre la prob. individual)",
+          0.35, 0.2, 0.5, "—", "Supuesto: la participación temprana reduce los litigios "
+          "(informe S1); sin dato chileno", "supuesto", True, "reglas"),
+    Param("annul_factor_cum", "Anulaciones con evaluación conjunta (factor)", 0.4, 0.2, 0.6, "—",
+          "Supuesto: una evaluación con participación deja menos vicios que reclamar",
+          "supuesto", True, "reglas"),
+    Param("trust_gain_cum", "Confianza que deja cada aprobación conjunta con participación",
+          0.1, 0.0, 0.2, "—", "Supuesto (vacío A8)", "supuesto", True, "reglas"),
+    Param("transparency_trust", "Confianza que recupera el monitoreo público de agua y energía",
+          0.15, 0.05, 0.25, "—", "Supuesto (vacío A8: efecto de la información en la oposición)",
+          "supuesto", True, "reglas"),
     # --- Opinión
-    Param("opinion_speed", "Velocidad de cambio de opinión", 0.12, 0.06, 0.2, "1/mes",
-          "Supuesto (vacío A8: elasticidad de la oposición)", "supuesto", False, "opinión"),
+    Param("opinion_speed", "Velocidad de cambio de opinión", 0.13, 0.06, 0.2, "1/mes",
+          "Supuesto (vacío A8: elasticidad de la oposición)", "supuesto", True, "opinión"),
     Param("benefit_weight", "Peso de los beneficios locales en la opinión", 1.0, 0.5, 1.5,
           "—", "Supuesto (vacío A8)", "supuesto", True, "opinión"),
     Param("local_hire_share", "Fracción de empleos contratados en la comuna", 0.25, 0.1, 0.4,

@@ -59,6 +59,16 @@ SEASON = np.cos(2 * np.pi * np.arange(12) / 12)
 UTM_USD = 75.0  # 1 UTM ≈ US$75 (aprox. 2026)
 PATENTE_CAP_USD = 8000 * UTM_USD  # tope legal de la patente municipal: 8.000 UTM/año
 STAGE_WEIGHT = np.array([0.0, 0.45, 0.45, 0.45, 0.8, 1.0, 0.0])  # por estado
+# Tope de proyectos nuevos por año. Las llegadas se sortean a este ritmo y se "adelgazan" según
+# la demanda, así los proyectos de una demanda baja son un subconjunto de los de una alta.
+SYNTH_RATE_MAX = 30.0
+
+
+def _project_draws(rng, n: int) -> dict:
+    """Números aleatorios propios de n proyectos (duraciones, decisiones, riesgos, preferencias)."""
+    return {"lf": rng.standard_normal(n), "z": rng.standard_normal((n, 6)),
+            "u": rng.random((n, 8)), "u_month": rng.random((n, C.N_MONTHS)),
+            "gumbel": rng.gumbel(size=(n, NC))}
 
 
 # ---------------------------------------------------------------------------
@@ -146,15 +156,24 @@ class Run:
         # Llegadas sintéticas 2027+ (mismas para todas las políticas con igual demanda)
         rate = pol.demand_rate if pol.demand_rate is not None else {
             "baja": 2.0, "base": 5.0, "alta": 10.0}[pol.demand]
-        synth = []
+        if not 0 <= rate <= SYNTH_RATE_MAX:
+            raise ValueError(f"demand_rate debe estar entre 0 y {SYNTH_RATE_MAX:g}")
+        cand = []
         for year in range(2027, C.YEAR_END + 1):
-            for _ in range(rng_s.poisson(rate)):
+            for _ in range(rng_s.poisson(SYNTH_RATE_MAX)):
                 month = (year - C.YEAR0) * 12 + int(rng_s.integers(12))
                 # tamaño típico 30 MW, rango 3–500 MW (informe, parte C)
                 mw = float(np.clip(rng_s.lognormal(math.log(30), 0.9), 3, 500))
                 u = rng_s.random()
                 cool = EVAP if u < 0.3 else (AIR if u < 0.8 else HYBRID)
-                synth.append((month, mw, cool))
+                cand.append((month, mw, cool, rng_s.random()))
+        # Cada candidato trae sus propios números: un proyecto sintético ve lo mismo con
+        # cualquier demanda, y los conocidos (otro flujo) no cambian cuando cambia la demanda.
+        cand_draws = _project_draws(rng_s, len(cand))
+        kept = np.array([j for j, c in enumerate(cand) if c[3] * SYNTH_RATE_MAX < rate], dtype=int)
+        synth = [cand[j][:3] for j in kept]
+        draws = {k: np.concatenate([d, cand_draws[k][kept]])
+                 for k, d in _project_draws(rng_p, NK).items()}
         self.n_synth = len(synth)
         N = self.N = NK + self.n_synth
         self.it = np.zeros(N)
@@ -171,7 +190,7 @@ class Run:
         self.status = np.full(N, ST_NONE)
         self.online = np.full(N, 10**6)
         self.build_start = np.full(N, 10**6)
-        self.lfmax = np.clip(v["lf_max"] + 0.08 * rng_p.standard_normal(N), 0.45, 0.97)
+        self.lfmax = np.clip(v["lf_max"] + 0.08 * draws["lf"], 0.45, 0.97)
         self.known = np.zeros(N, dtype=bool)
         self.known[:NK] = True
         for i, p in enumerate(C.PROJECTS):
@@ -183,7 +202,7 @@ class Run:
             if p.extra.get("request_mw"):
                 # El CEN informa la potencia de conexión pedida (total), no la potencia TI
                 self.it[i] = p.it_mw / (v["pue_air"] * v["peak_pue_ratio"])
-            self.capex[i] = p.capex_musd or p.it_mw * v["capex_musd_per_mw"]
+            self.capex[i] = p.capex_musd or self.it[i] * v["capex_musd_per_mw"]
             self.fuel[i] = p.fuel_t if p.fuel_t is not None else -1.0
             self.water_plan[i] = ov.get("water_right_ls", p.water_right_ls) or 0.0
             self.hv[i] = p.hv_line
@@ -207,10 +226,10 @@ class Run:
             self.fuel[i] = -1.0
             self.announce[i] = self.permit_start[i] = month
         # Números aleatorios por proyecto (números aleatorios comunes entre políticas)
-        self.z = rng_p.standard_normal((N, 6))  # duraciones
-        self.u = rng_p.random((N, 8))  # decisiones discretas
-        self.u_month = rng_p.random((N, C.N_MONTHS))  # riesgos mensuales (reubicar/desistir)
-        self.gumbel = rng_p.gumbel(size=(N, NC))
+        self.z = draws["z"]  # duraciones
+        self.u = draws["u"]  # decisiones discretas
+        self.u_month = draws["u_month"]  # riesgos mensuales (reubicar/desistir)
+        self.gumbel = draws["gumbel"]
         # Estado dinámico de cada proyecto
         self.route = [""] * N
         self.grid = np.zeros(N, dtype=int)  # 0 sin pedir, 1 en cola, 2 reservada
@@ -287,6 +306,7 @@ class Run:
             "it_rm_jun": z(NY),
             "n_dc_jun": z(NY),
             "wetland_stress": z(NY), "wetland_stress_nodc": z(NY),
+            "px_mw": z(NY), "px_share": z(NY),  # demanda DC que presiona la tarifa
             "c_it": z(NC, NY), "c_demand": z(NC, NY), "c_share": z(NC, NY),
             "c_water_ls": z(NC, NY), "c_conflict": z(NC, NY), "c_h500": z(NC, NY),
             "c_jobs_local": z(NC, NY), "c_muni_usd": z(NC, NY), "c_fund_usd": z(NC, NY),
@@ -509,7 +529,7 @@ class Run:
         # Señal a la comunidad: sin participación crece la desconfianza
         salience = min(1.0, math.sqrt(self.it[i] / 50))
         self.trust[c] += salience * {"pertinencia": 0.15, "SEIA": 0.03,
-                                     "acumulativa": -0.1}.get(route, 0)
+                                     "acumulativa": -self.v["trust_gain_cum"]}.get(route, 0)
         fz = self._forced.get(i, {})
         litigate = False
         if allow_lit and not fz.get("no_lit") and t >= fz.get("no_lit_before", -1):
@@ -521,7 +541,7 @@ class Run:
             # convexo: los litigios se concentran donde la oposición local es intensa
             p = self.v["p_lit_base"] + self.v["p_lit_conflict"] * local ** 2 * grounds
             if route == "acumulativa":
-                p *= 0.35
+                p *= self.v["lit_factor_cum"]
             u = self.u[i, 2] if self.n_lit[i] == 0 else (self.u[i, 2] + 0.618 * self.n_lit[i]) % 1
             litigate = u < min(p, 0.9)
         if litigate:
@@ -548,7 +568,7 @@ class Run:
             water_flag = self.cool[i] != AIR and COMMUNE_AQ[c] >= 0
             p = self.v["p_annul_base"] * (1 + 2.0 * water_flag)
             if self.route[i] == "acumulativa":
-                p *= 0.4
+                p *= self.v["annul_factor_cum"]
             annul = self.u[i, 4] < p
         if not annul:
             if self.status[i] == ST_LITIG:
@@ -622,6 +642,9 @@ class Run:
         self.commune[i] = c_new
         self.site[i] = NK + c_new
         self.permit_ok[i] = False
+        # el juicio era contra el permiso del sitio anterior: al mudarse queda sin objeto
+        self.lit_active[i] = False
+        self.paused[i] = False
         self.in_zone[i] = False
         self.cum["relocations"] += 1
         self._design(i, t)
@@ -660,7 +683,7 @@ class Run:
         pol = self.policy
         if pol.transparency:
             self.transparency_on = True
-            self.trust[COMMUNE_RM] -= 0.15
+            self.trust[COMMUNE_RM] -= self.v["transparency_trust"]
         for i in range(self.N):
             if self.status[i] != ST_PERMIT or self.permit_ok[i] or not self._rm(i):
                 continue
@@ -669,10 +692,10 @@ class Run:
             if pol.air_cooling_rm and self.cool[i] != AIR:
                 self.cool[i] = AIR
                 self.water_plan[i] = 0.0
-                if self.grid[i] == 2:  # la reserva crece por el mayor PUE
-                    n = COMMUNE_NODE[self.commune[i]]
+                if self.grid[i] in (1, 2):  # la solicitud (o la reserva) crece por el mayor PUE
                     new = self._req(i)
-                    self.headroom[n] -= new - self.req[i]
+                    if self.grid[i] == 2:
+                        self.headroom[COMMUNE_NODE[self.commune[i]]] -= new - self.req[i]
                     self.req[i] = new
             if pol.cumulative and "script" not in self._forced.get(i, {}):
                 self.version[i] += 1  # cancela la resolución individual pendiente
@@ -947,11 +970,16 @@ class Run:
         sys_twh = v["system_twh_2025"] * (1 + v["system_growth"]) ** (year - 2025)
         share = r["demand_chile"][yi] * 8.76 / 1000 / sys_twh
         r["dc_share_national"][yi] = share
-        base_share = r["dc_share_national"][2025 - C.YEAR0] if year > 2025 else share
-        d_mw = max(0.0, r["demand_chile"][yi] - r["demand_chile"][min(yi, 2025 - C.YEAR0)])
+        # Presión sobre la tarifa: la demanda de Antofagasta no cuenta, porque allí sobra energía
+        # solar (vertimiento, informe A3), la misma premisa del incentivo al norte.
+        y25 = 2025 - C.YEAR0
+        r["px_mw"][yi] = r["demand_chile"][yi] - demand_c[ANTOF]
+        r["px_share"][yi] = r["px_mw"][yi] * 8.76 / 1000 / sys_twh
+        base_px = r["px_share"][y25] if year > 2025 else r["px_share"][yi]
+        d_mw = max(0.0, r["px_mw"][yi] - r["px_mw"][min(yi, y25)])
         grid_pct = 0.1 * v["reg_alloc_share"] * 0.1 * v["grid_cost_musd_per_mw"] * d_mw / 700
-        r["bill_pct"][yi] = 100 * (0.7 * v["price_elasticity"] * max(0.0, share - base_share)
-                                   + grid_pct)
+        r["bill_pct"][yi] = 100 * (0.7 * v["price_elasticity"]
+                                   * max(0.0, r["px_share"][yi] - base_px) + grid_pct)
         r["c_nox"][:, yi] = y_acc["nox_t"]
         r["nox_t"][yi] = y_acc["nox_t"].sum()
         r["diesel_hours"][yi] = y_flat["diesel_hours"]
