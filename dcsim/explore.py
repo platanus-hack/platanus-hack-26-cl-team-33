@@ -24,9 +24,10 @@ import numpy as np
 
 from . import catalog as C
 from .model import NK, ST_OPER, Run
+from .montecarlo import CACHE_DIR
 from .policy import STATUS_QUO, Policy
 
-OUT = C.__file__.replace("dcsim/catalog.py", "cache/explore_raw.json")
+OUT = str(CACHE_DIR / "explore_raw.json")
 Y = {2030: C.YEARS.index(2030), 2035: C.YEARS.index(2035)}
 SERIES = ["it_chile", "it_rm", "waitlist_mw", "water_ls_rm", "water_peak_ls_rm", "conflict_rm",
           "litigations", "invest_realized", "invest_lost", "cancellations", "relocations",
