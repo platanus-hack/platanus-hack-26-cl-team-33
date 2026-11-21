@@ -37,5 +37,5 @@ for (const key of ['admitted_within_12h_pct', 'mean_wait_to_bed_capped_12h_min',
 const noAdmissionsComparison = structuredClone(comparisonRequest);
 noAdmissionsComparison.base_config.admission_probability = 0;
 await assert.rejects(api.compare(noAdmissionsComparison), /422/);
-await writeFile(new URL('../evidence/real-api-trace.json', import.meta.url), JSON.stringify({ captured_at: new Date().toISOString(), origin, api_commit: '8b9134d72a09784cc91b70f1f16397e4fa8cadd4', engine_commit: '8d4e1a381ccdfe658867d9d49fcb8e46df7dc086', traces }) + '\n');
+await writeFile(new URL('../evidence/real-api-trace.json', import.meta.url), JSON.stringify({ captured_at: new Date().toISOString(), origin, api_commit: process.env.BEDFLOW_API_COMMIT || 'unverified', engine_commit: process.env.BEDFLOW_ENGINE_COMMIT || 'unverified', traces }) + '\n');
 console.log('PASS: four scenarios, comparison, null-admission metrics, zero-valid-seed rejection; real-engine headers throughout.');

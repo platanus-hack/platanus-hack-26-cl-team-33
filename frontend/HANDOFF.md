@@ -60,7 +60,7 @@ The earlier sandbox blockers were rechecked, not treated as invalid credentials.
 
 Passed:
 
-- `npm install`: generated `package-lock.json`. Updated Vitest to patched 4.1.12; `npm audit` reports **0 vulnerabilities**.
+- `npm install` generated `package-lock.json`; a clean `npm ci` passed. Updated Vitest to patched 4.1.12; `npm audit` reports **0 vulnerabilities**.
 - `npm test`: **10/10** core adapter and contract tests.
 - `npm run test:ui`: **10/10** UI tests, including HTTP fixture disclosure, exact scenario override submission, unavailable null KPIs, simulation and comparison stale-result clearing, demo reset, replay scrub/play/pause/end cleanup, and paired uncertainty.
 - `VITE_USE_MOCK=false npm run build`: semantic TypeScript check and production bundle pass. Vite reports a non-blocking ~745 kB uncompressed main chunk (~217 kB gzip); no build error.
@@ -107,7 +107,7 @@ VITE_USE_MOCK=false npm run dev -- --host 127.0.0.1 --port 5174
 npm run test:integration
 ```
 
-The integration script defaults to `http://127.0.0.1:5174`; set `BEDFLOW_TEST_ORIGIN` to change it. It intentionally fails on a stub response. It writes fresh synthetic trace evidence, so inspect that diff before committing a rerun.
+The integration script defaults to `http://127.0.0.1:5174`; set `BEDFLOW_TEST_ORIGIN` to change it. It intentionally fails on a stub response. Set `BEDFLOW_API_COMMIT` and `BEDFLOW_ENGINE_COMMIT` to the verified backend source revisions when capturing provenance; omitted revisions are marked `unverified`. It writes fresh synthetic trace evidence, so inspect that diff before committing a rerun.
 
 ## Integration decisions and remaining dependencies
 
