@@ -283,7 +283,7 @@
             <li><b>Operación.</b> Usa electricidad y agua, prueba sus generadores diésel y paga patentes.</li>
           </ol>
           <p><b>El bucle que una planilla no ve.</b> Los hogares cercanos sienten ruido, diésel, miedo por el agua y la acumulación de proyectos, y reciben empleo, patentes y fondos. Su oposición se contagia en la comuna, puede llevar un proyecto a tribunales y atrasarlo o anularlo, y cambia dónde eligen instalarse los siguientes.</p>
-          <p>Cada regla se simula 200 veces. Tu regla, <span data-n-custom>100</span> veces, para que responda en menos de un minuto. Los supuestos más inciertos (marcados en «Supuestos») se sortean en cada futuro y el resto queda en su valor central. Todas las reglas usan los mismos números aleatorios, así la diferencia entre reglas es efecto de la regla y no del azar. Por eso tu regla se compara con seguir como hoy en esos mismos <span data-n-custom>100</span> futuros. Se reporta el valor típico (mediana) y el rango donde cae el 90% de los futuros.</p>
+          <p>Cada regla se simula 200 veces. Tu regla, <span data-n-custom>100</span> veces, para que responda en menos de un minuto. De los <span data-n-params>53</span> supuestos, <span data-n-sampled>13</span> se sortean en cada futuro (marcados en «Supuestos») y los otros <span data-n-fixed>40</span> quedan en su valor central; en <a href="#firmeza" data-open="firmeza">Qué tan firmes son los hallazgos</a> se llevan a sus extremos. Todas las reglas usan los mismos números aleatorios, así la diferencia entre reglas es efecto de la regla y no del azar. Por eso tu regla se compara con seguir como hoy en esos mismos <span data-n-custom>100</span> futuros. Se reporta el valor típico (mediana) y el rango donde cae el 90% de los futuros.</p>
         </div>
       </details>
       <details id="matematica" data-rise>
@@ -293,7 +293,7 @@
       <details id="vacios" data-rise>
         <summary>Lo que no sabemos</summary>
         <div class="detail-body prose">
-          <p>Estos vacíos de información se tratan como supuestos con rango. Los que más pesan en las reglas (opinión, beneficios, efecto de la evaluación conjunta y de la transparencia, tarifa) se sortean en cada futuro simulado; el resto queda fijo en su valor central.</p>
+          <p>Estos vacíos de información se tratan como supuestos con rango. En cada futuro simulado se sortean <span data-n-sampled>13</span>: el efecto de la evaluación conjunta y de la transparencia, la velocidad de la opinión y el peso de los beneficios, el efecto en la cuenta de la luz y cuánta electricidad y agua usa cada data center. Los otros <span data-n-fixed>40</span>, entre ellos los pesos de la opinión y las probabilidades de juicio, quedan en su valor central; en <a href="#firmeza" data-open="firmeza">Qué tan firmes son los hallazgos</a> se lleva cada uno a los extremos de su rango.</p>
           <ul>
             <li>Consumo real de agua y electricidad por data center: solo hay datos de Google Quilicura y del CEN.</li>
             <li>Recarga del acuífero y conexión acuífero–humedal en Quilicura: el nivel del acuífero es un índice, no una predicción en metros.</li>
@@ -317,7 +317,7 @@
     </section>
 
     <template id="mathTpl">
-          <p class="math-intro">Las ecuaciones que corre el simulador, con sus valores. El tiempo avanza en meses <var>t</var>; <var>m</var> es el mes del año (enero = 0) y <var>k</var> el tipo de enfriamiento.</p>
+          <p class="math-intro">Las ecuaciones que corre el simulador, con sus valores. El tiempo avanza en meses <var>t</var>; <var>m</var> es el mes del año (enero = 0) y <var>k</var> el tipo de enfriamiento. Cuando un número es un supuesto, se muestra su valor central: su rango está en «Supuestos», y los que no se sortean en cada futuro se llevan a sus extremos en <a href="#firmeza" data-open="firmeza">Qué tan firmes son los hallazgos</a>.</p>
 
           <h3>Electricidad de un data center</h3>
           <p class="eq"><var>P</var> = <var>TI</var> · <var>FC</var>(<var>t</var>) · <var>PUE<sub>k</sub></var> · (1 + <var>a<sub>k</sub></var> · cos(2π<var>m</var>/12))</p>
@@ -335,7 +335,7 @@
 
           <h3>Fila de conexión a la red</h3>
           <p class="eq"><var>R</var> = <var>TI</var> · <var>PUE<sub>k</sub></var> · 1,12; se conecta el primero de la fila con <var>R</var> ≤ <var>H<sub>n</sub></var>, y <var>H<sub>n</sub></var> ← <var>H<sub>n</sub></var> − <var>R</var></p>
-          <p class="where"><var>H<sub>n</sub></var>: capacidad libre del nodo (norte, poniente, sur, Polpaico…), que sube con las ampliaciones de red en fechas con atraso aleatorio. Tras 12 meses esperando, cada mes se muda con probabilidad 0,015 (0,004 si viene una ampliación en menos de 4 años), más 0,02 × incentivo al norte; tras 36 meses desiste con probabilidad 0,004.</p>
+          <p class="where"><var>H<sub>n</sub></var>: capacidad libre del nodo (norte, poniente, sur, Polpaico…), que sube con las ampliaciones de red en fechas con atraso aleatorio. Tras 12 meses esperando, cada mes intenta mudarse con probabilidad 0,015 (0,004 si viene una ampliación en menos de 4 años), más 0,02 × incentivo al norte, y se muda si la comuna que elige tiene red libre; tras 36 meses desiste con probabilidad 0,004 al mes. Las dos probabilidades de mudarse son supuestos sin dato chileno, con rango: 0,0075 a 0,03 y 0,002 a 0,008.</p>
 
           <h3>Dónde se instalan los proyectos nuevos</h3>
           <p class="eq"><var>V<sub>c</sub></var> = 2,5 · latencia<sub><var>c</var></sub> + 2,5 · red<sub><var>c</var></sub> − suelo<sub><var>c</var></sub> − 3 · conflicto<sub><var>c</var></sub> + 4 · incentivo · [<var>c</var> = Antofagasta] + <var>ε<sub>c</sub></var></p>
@@ -346,18 +346,20 @@
           <p class="eq"><var>o<sub>i</sub></var> ← <var>o<sub>i</sub></var> + <var>λ</var> · (<var>σ</var>(<var>z<sub>i</sub></var>) − <var>o<sub>i</sub></var>) + 0,03 · (<var>ō<sub>c</sub></var> − <var>o<sub>i</sub></var>); movilizado si <var>o<sub>i</sub></var> &gt; <var>θ<sub>i</sub></var></p>
           <p class="eq"><var>E<sub>i</sub></var> = Σ<sub><var>s</var></sub> e<sup>−<var>d<sub>is</sub></var>/0,7 km</sup> · etapa<sub><var>s</var></sub> · tamaño<sub><var>s</var></sub> · molestia<sub><var>s</var></sub></p>
           <ul class="where">
-            <li><var>E<sub>i</sub></var>: cercanía a data centers. Etapa 0,45 en trámite, 0,8 en obra, 1 operando. Tamaño <var>TI</var>/30 bajo 30 MW y √(<var>TI</var>/30) sobre eso. Molestia 1 + 0,5 · diésel/700 t + 1,5 si hay línea de alta tensión + 0,3 por el ruido de chillers de aire.</li>
-            <li><var>W<sub>c</sub></var>: agua percibida sobre el agua que usan los hogares de la comuna, × 1,5 si el acuífero está en zona de prohibición. Sin transparencia se percibe el derecho de agua; con transparencia, el uso real (≈ 29% del derecho).</li>
-            <li><var>F<sub>c</sub></var>: parte de la electricidad de la comuna que usan los data centers (la acumulación).</li>
+            <li><var>E<sub>i</sub></var>: cercanía a data centers. Etapa 0,45 en trámite, esperando red o en tribunales, 0,8 en obra y 1 operando. Tamaño <var>TI</var>/30 bajo 30 MW y √(<var>TI</var>/30) sobre eso, hasta 4. Molestia 1 + 0,5 · mín(diésel/700 t, 2) + 1,5 si hay línea de alta tensión + 0,3 por el ruido de chillers de aire.</li>
+            <li><var>W<sub>c</sub></var>: agua percibida sobre el agua que usan los hogares de la comuna, × 1,5 si la comuna está sobre uno de los dos acuíferos en zona de prohibición y × 0,5 si no. Sin transparencia se percibe el derecho de agua; con transparencia, el uso real (≈ 29% del derecho).</li>
+            <li><var>F<sub>c</sub></var>: parte de la electricidad de la comuna que usan los data centers (la acumulación). Su peso, 0,6, es 0,4 × 1,5.</li>
             <li><var>B<sub>c</sub></var>: 0,04 × empleos locales por cada 1.000 hogares + dólares por hogar al año (patentes y fondo) / 100.</li>
-            <li><var>T<sub>c</sub></var>: desconfianza. Sube 0,15 con cada pertinencia sin participación, 0,03 con cada SEIA, baja entre 0 y 0,2 con cada aprobación conjunta y entre 0,05 y 0,25 en la RM si hay transparencia; decae 1% al mes.</li>
+            <li><var>T<sub>c</sub></var>: desconfianza. Cada aprobación suma 0,15 si fue por pertinencia sin participación y 0,03 si fue por SEIA, y resta entre 0 y 0,2 si fue conjunta, todo multiplicado por mín(1, √(<var>TI</var>/50)). Cada juicio suma 0,15 y cada anulación 0,3 en su comuna (y 0,1 en toda la RM). La transparencia resta entre 0,05 y 0,25 en la RM. Cada mes queda el 99%: decae 1% al mes. Se mantiene entre −0,5 y 1,2.</li>
             <li><var>s<sub>i</sub></var>, <var>v<sub>i</sub></var>, <var>θ<sub>i</sub></var>: sensibilidad, valoración de beneficios y umbral de cada hogar (<var>θ</var> entre 0,35 y 0,7). <var>λ</var> entre 0,06 y 0,2 por mes, <var>β</var> entre 0,5 y 1,5. <var>σ</var>(<var>z</var>) = 1 / (1 + e<sup>−<var>z</var></sup>).</li>
           </ul>
+          <p class="where">Supuestos sin dato chileno, con su rango entre paréntesis: −2 (−2,5 a −1,5), 1,6 (1 a 2,2), 1,2 (0,6 a 1,8), el 1,5 del peso de <var>F<sub>c</sub></var> (0,75 a 2,25), 0,03 (0 a 0,06), el 0,15 de cada pertinencia (0,05 a 0,25) y el 99% que queda cada mes (98% a 99,5%).</p>
 
           <h3>Juicios</h3>
           <p class="eq"><var>p</var><sub>juicio</sub> = 0,02 + 3 · <var>L</var><sup>2</sup> · <var>G</var>, con <var>G</var> = 0,3 + 0,7 · máx(1,5 · [agua de acuífero], [casas a menos de 300 m], [línea de alta tensión])</p>
           <p class="eq"><var>p</var><sub>anulación</sub> = 0,25 · (1 + 2 · [agua de acuífero])</p>
-          <p class="where"><var>L</var>: fracción de vecinos movilizados a menos de 1,5 km del proyecto. Con evaluación conjunta, <var>p</var><sub>juicio</sub> × 0,2 a 0,5 y <var>p</var><sub>anulación</sub> × 0,2 a 0,6 (supuestos sin dato chileno, sorteados en cada futuro). Un juicio dura 26 meses típicos; la empresa espera el fallo con probabilidad 0,85. Si se anula, rediseña con aire (70%) o desiste.</p>
+          <p class="where"><var>L</var>: fracción de vecinos movilizados, donde cada hogar pesa e<sup>−<var>d</var>/1,5 km</sup> según su distancia <var>d</var> al proyecto. [agua de acuífero]: no enfría por aire y está sobre uno de los dos acuíferos. <var>p</var><sub>juicio</sub> llega como máximo a 0,9. Con evaluación conjunta, <var>p</var><sub>juicio</sub> × 0,2 a 0,5 y <var>p</var><sub>anulación</sub> × 0,2 a 0,6 (supuestos sin dato chileno, sorteados en cada futuro). Un juicio dura 26 meses típicos; la empresa espera el fallo con probabilidad 0,85. Si se anula, rediseña con aire (70%) o desiste.</p>
+          <p class="where">Supuestos con rango: 0,02 (0,01 a 0,05), 3 (2 a 4), el exponente 2 de <var>L</var> (1 a 3), el 1,5 del agua (0,5 a 2), 0,25 (0,1 a 0,4), el 2 de la anulación (0,5 a 3), los 26 meses (18 a 48) y el 0,85 (0,6 a 0,95).</p>
 
           <h3>Acuífero</h3>
           <p class="eq"><var>h</var> ← <var>h</var> + (tendencia + anomalía − recorte · recarga) / 12 − <var>V</var><sub>DC</sub> / (<var>S</var> · <var>A</var>)</p>

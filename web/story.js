@@ -69,6 +69,12 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
     S.noteText = `Corre ${story.n_custom || 100} futuros; puede tardar hasta un minuto.`;
     $("#customNote").textContent = S.noteText;
     document.querySelectorAll("[data-n-custom]").forEach((el) => { el.textContent = fmt(story.n_custom || 100); });
+    // cuántos supuestos se sortean en cada futuro y cuántos quedan fijos (los que prueba «Qué tan firmes»)
+    const sampled = meta.params.filter((p) => p.sample).length;
+    const fill = (sel, v) => document.querySelectorAll(sel).forEach((el) => { el.textContent = fmt(v); });
+    fill("[data-n-params]", meta.params.length);
+    fill("[data-n-sampled]", sampled);
+    fill("[data-n-fixed]", meta.params.length - sampled);
     renderNumbers(false);
     fillFindings();
     fillProof();
@@ -420,7 +426,7 @@ function updateMap() {
   const base = baseEns();
   const diff = S.view === "diff" && S.current !== "status_quo" && base;
   const vs = S.current === "custom" ? `Tu regla comparada con seguir como hoy en los mismos ${fmt(res.meta.n)} futuros`
-    : `${name} comparado con seguir como hoy`;
+    : `${name} frente a seguir como hoy`;  // "frente a": sirve para nombres femeninos y masculinos
   const when = y < 2026 ? "Historia real, igual en todas las reglas" : y === 2026 ? "2026: real hasta noviembre"
     : diff ? vs : `Futuro simulado · ${name}`;
   $("#mapWhen").textContent = diff && y <= 2026 ? `${when}: todavía no hay diferencia` : when;
@@ -764,9 +770,11 @@ const lazy = {
       }</tbody></table>`;
   }),
   supuestos: () => {
-    const nd = (x) => (Math.abs(x) < 1 && x !== 0 ? 2 : Math.abs(x) < 10 ? 1 : 0);
-    $("#paramsBody").innerHTML = `<table class="data"><thead><tr><th>Supuesto</th><th>Valor</th><th>Rango</th><th>¿Se sortea?</th><th>Tipo</th><th>Fuente</th></tr></thead><tbody>${
-      S.meta.params.map((p) => `<tr><td>${esc(p.label)}</td><td>${fmt(p.base, nd(p.base))} ${p.unit === "—" ? "" : esc(p.unit)}</td><td>${fmt(p.low, nd(p.low))} a ${fmt(p.high, nd(p.high))}</td><td>${p.sample ? "sí" : "no"}</td><td>${esc(p.kind)}</td><td>${esc(p.src)}</td></tr>`).join("")
+    const ps = S.meta.params;
+    const sampled = ps.filter((p) => p.sample).length;
+    $("#paramsBody").innerHTML = `<p>${fmt(ps.length)} supuestos: ${fmt(sampled)} se sortean en cada futuro y los otros ${fmt(ps.length - sampled)} quedan en su valor central. Esos ${fmt(ps.length - sampled)} se llevan a sus extremos en <a href="#firmeza" data-open="firmeza">Qué tan firmes son los hallazgos</a>.</p>
+      <table class="data"><thead><tr><th>Supuesto</th><th>Valor</th><th>Rango</th><th>¿Se sortea?</th><th>Tipo</th><th>Fuente</th></tr></thead><tbody>${
+      ps.map((p) => `<tr><td>${esc(p.label)}</td><td>${num(p.base)} ${p.unit === "—" ? "" : esc(p.unit)}</td><td>${num(p.low)} a ${num(p.high)}</td><td>${p.sample ? "sí" : "no"}</td><td>${esc(p.kind)}</td><td>${esc(p.src)}</td></tr>`).join("")
       }</tbody></table>`;
     return Promise.resolve();
   },
