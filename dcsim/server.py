@@ -40,7 +40,7 @@ app = FastAPI(title="Simulador de data centers en Chile", lifespan=_lifespan)
 @app.middleware("http")
 async def _no_cache_static(request, call_next):
     resp = await call_next(request)
-    if request.url.path == "/" or request.url.path.startswith("/static"):
+    if request.url.path in ("/", "/explorar") or request.url.path.startswith("/static"):
         resp.headers["Cache-Control"] = "no-cache"
     return resp
 _lock = threading.Lock()
@@ -156,6 +156,35 @@ def findings() -> list:
     return json.loads(path.read_text()) if path.exists() else []
 
 
+STORY_TABS = ["status_quo", "mesa", "aire", "acumulativa", "norte", "paquete"]
+STORY_KEYS = ["it_chile", "dc_share_national", "water_ls_rm", "conflict_rm", "litigations",
+              "invest_lost", "invest_realized", "bill_pct", "waitlist_mw"]
+STORY_CHECKS = ["rm_2021", "google_water", "rm_2025", "waitlist", "litigations",
+                "conflict_pattern"]
+
+
+@app.get("/api/story")
+def story() -> dict:
+    """Lo justo para la portada: 6 reglas × pocas cifras en 2035, y la prueba resumida."""
+    def build():
+        yi = C.YEARS.index(2035)
+        tabs = []
+        for sid in STORY_TABS:
+            s = _scenario(sid)["series"]
+            sc = SCENARIOS[sid]
+            tabs.append({
+                "id": sid, "name": sc["name"], "short": sc["short"], "summary": sc["summary"],
+                "values": {k: {q: s[k][q][yi] for q in ("p5", "p50", "p95")}
+                           for k in STORY_KEYS},
+            })
+        val = _cached("validation", lambda: run_validation(n=N_PRESET))
+        checks = {c["id"]: c for c in val["checks"]}
+        return {"year": 2035, "tabs": tabs, "passed": val["passed"], "total": val["total"],
+                "checks": [checks[i] for i in STORY_CHECKS if i in checks],
+                "findings": findings()}
+    return _cached("story", build)
+
+
 @app.get("/api/status")
 def status() -> dict:
     ready = [sid for sid in list(SCENARIOS) + list(HYPOTHESIS_SCENARIOS)
@@ -166,6 +195,11 @@ def status() -> dict:
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(WEB / "index.html")
+
+
+@app.get("/explorar")
+def explorar() -> FileResponse:
+    return FileResponse(WEB / "explorar.html")
 
 
 app.mount("/static", StaticFiles(directory=WEB), name="static")

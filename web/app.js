@@ -43,7 +43,12 @@ async function init() {
   initMap();
   api("/api/findings").then(renderFindings).catch(() => {});
   api("/api/validation").then((v) => { S.validation = v; renderValidation(); }).catch(showErr("#validation"));
-  await selectScenario("status_quo", false);
+  // Enlaces desde la portada: ?s=<regla> preselecciona, ?p=<proyecto> lo muestra en el mapa
+  const qs = new URLSearchParams(location.search);
+  const wanted = qs.get("s");
+  await selectScenario(wanted && S.meta.scenarios.some((x) => x.id === wanted) ? wanted : "status_quo", false);
+  if (qs.get("p")) runFindingAction({ type: "project", id: qs.get("p"), year: Number(qs.get("y")) || 2024 });
+  else if (wanted) $("#gente").scrollIntoView();
   // Precarga las demás reglas (cacheadas en el servidor) para fijar la escala de colores del mapa
   Promise.all(S.meta.scenarios.map((sc) => loadScenario(sc.id).catch(() => null))).then(() => updateMap());
   api("/api/insights").then((v) => { S.insights = v; renderHypotheses(); }).catch(showErr("#hyps"));

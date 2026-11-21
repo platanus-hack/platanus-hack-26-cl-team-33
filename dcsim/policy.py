@@ -95,6 +95,15 @@ SCENARIOS: dict[str, dict] = {
                    "comunitario de US$20.000 por MW al año.",
         "question": "¿Y si las empresas transparentan y comparten beneficios?",
     },
+    "paquete": {
+        "name": "Aire + fondo + norte",
+        "short": "Las tres juntas",
+        "policy": replace(STATUS_QUO, air_cooling_rm=True, community_fund_usd_mw=20_000,
+                          north_incentive=0.6),
+        "summary": "Enfriamiento por aire en la RM, un fondo comunitario de US$20.000 por MW al "
+                   "año e incentivo para instalarse en Antofagasta.",
+        "question": "¿Y si combinamos las tres reglas que más ayudan?",
+    },
 }
 
 
