@@ -206,10 +206,12 @@ function delta(spec, v, b, c) {  // c: conteo futuro a futuro, solo para tu regl
   const up = v > b;
   const rel = b ? Math.abs(v - b) / Math.abs(b) : 0;
   const diff = Math.abs(v - b) * (spec.scale || 1);
-  if ((spec.points && diff < 0.1) || (!spec.points && rel < 0.02)) return "igual que seguir como hoy";
+  if ((spec.points && diff < 0.1) || (!spec.points && rel < 0.02)) {
+    return c ? `igual que seguir como hoy en esos mismos futuros (${spec.show(b)})` : "igual que seguir como hoy";
+  }
   const amount = spec.points ? `${fmt(diff, diff < 10 ? 1 : 0)} puntos` : `${fmt(rel * 100)}%`;
   const verdict = spec.goodUp === null ? "" : (up === spec.goodUp ? "<b>mejor</b> · " : "<b>peor</b> · ");
-  return `${verdict}${amount} ${up ? "más" : "menos"} que seguir como hoy${c ? ` · ${inFutures(c, up, spec.goodUp)}` : ""}`;
+  return `${verdict}${amount} ${up ? "más" : "menos"} que seguir como hoy${c ? ` (${spec.show(b)}) · ${inFutures(c, up, spec.goodUp)}` : ""}`;
 }
 
 // en cuántos de los mismos futuros tu regla mueve la cifra hacia ese lado, y qué pasa en el resto
@@ -237,8 +239,15 @@ $("#custom").addEventListener("submit", async (e) => {
     transparency: f.get("transparency") === "on",
   };
   const btn = $("#runCustom");
+  const nFut = (S.story && S.story.n_custom) || 100;
   btn.disabled = true;
-  $("#customNote").textContent = `Simulando ${S.story.n_custom || 100} futuros…`;
+  const t0 = Date.now();
+  const tick = () => {
+    const sec = Math.round((Date.now() - t0) / 1000);
+    $("#customNote").textContent = `Simulando ${fmt(nFut)} futuros… ${sec} s${sec >= 45 ? " (si otra persona está simulando, se espera su turno)" : ""}`;
+  };
+  tick();
+  const timer = setInterval(tick, 1000);
   loadCustomBase().catch(() => {});  // para el mapa, mientras se simula
   try {
     const r = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -254,6 +263,7 @@ $("#custom").addEventListener("submit", async (e) => {
   } catch {
     $("#customNote").textContent = "No se pudo simular. Intenta de nuevo.";
   } finally {
+    clearInterval(timer);
     btn.disabled = false;
   }
 });
@@ -430,6 +440,9 @@ function updateMap() {
   const when = y < 2026 ? "Historia real, igual en todas las reglas" : y === 2026 ? "2026: real hasta noviembre"
     : diff ? vs : `Futuro simulado · ${name}`;
   $("#mapWhen").textContent = diff && y <= 2026 ? `${when}: todavía no hay diferencia` : when;
+  if (S.current === "custom" && S.view === "diff" && !base && y > 2026) {
+    $("#mapWhen").textContent = "No se pudo cargar seguir como hoy en los mismos futuros: el mapa muestra el valor. Vuelve a elegir «Tu regla» para reintentar.";
+  }
   const m = METRICS[S.metric];
   const max = diff ? diffMax(S.metric) : metricMax(S.metric);
   renderKey(m, max, diff);
@@ -566,7 +579,8 @@ function fillFindings() {
   if (byId.boom) set("boom", byId.boom.stat.replace("×", ""));
   if (byId.boom && byId.boom.mw_pct !== undefined) set("boom-mw", `${fmt(byId.boom.mw_pct)}%`);
   const n = (S.story.findings || [])[0];
-  if (n) $("#closeStats").textContent = `${fmt(n.n_sims)} simulaciones, 200 futuros por regla, ${S.story.passed} de ${S.story.total} chequeos con datos reales.`;
+  const nSens = S.story.n_sensitivity;
+  if (n) $("#closeStats").textContent = `${fmt(n.n_sims)} simulaciones para buscar hallazgos${nSens ? ` y ${fmt(nSens)} para ver qué tan firmes son` : ""}, 200 futuros por regla, ${S.story.passed} de ${S.story.total} chequeos con datos reales.`;
   // bajo cada hallazgo de la portada, si resiste mover los supuestos
   document.querySelectorAll(".chapter[data-finding]").forEach((ch) => {
     const line = firmLine((S.story.sensitivity || {})[ch.dataset.finding]);
@@ -578,8 +592,13 @@ function fillFindings() {
 function fillMoreFindings() {
   const byId = Object.fromEntries((S.story.findings || []).map((f) => [f.id, f]));
   const others = ["lampa", "transparencia", "trayectoria", "paquete"].map((k) => byId[k]).filter(Boolean);
-  const firm = (id) => { const line = firmLine((S.story.sensitivity || {})[id]); return line ? `<p class="finding-firm">${line}</p>` : ""; };
+  const firm = (id) => {
+    const line = firmLine((S.story.sensitivity || {})[id]);
+    if (line) return `<p class="finding-firm">${line}</p>`;
+    return id === "trayectoria" ? '<p class="finding-firm">Describe cuánto varían los futuros y no compara reglas, así que no entra en la prueba de <a href="#firmeza" data-open="firmeza">qué tan firmes son los hallazgos</a>.</p>' : "";
+  };
   $("#moreFindings").innerHTML = others.map((f) => `<div class="finding">
+    <p class="finding-kicker">${esc(f.kicker)}</p>
     <h3><span class="finding-stat">${esc(f.stat)}</span> ${esc(f.headline)}</h3>
     <p>${esc(f.body)}</p><p class="finding-cost">${esc(f.cost)}</p>${firm(f.id)}</div>`).join("");
   return Promise.resolve();
@@ -670,7 +689,7 @@ function firmLine(s) {
 }
 
 // el detalle técnico: un párrafo, una fila por hallazgo y, debajo, dónde no se mantiene.
-// kicker(f): el título del hallazgo en la portada; nSampled: supuestos que se sortean en cada futuro
+// kicker(f): el nombre del hallazgo en la página; nSampled: parámetros que se sortean en cada futuro
 function firmHtml(sens, kicker = (f) => f.kicker, nSampled = null) {
   if (!sens || !sens.findings || !sens.findings.length) return "<p>Todavía no está el análisis de sensibilidad (cache/sensitivity.json).</p>";
   const F = sens.findings;
@@ -678,7 +697,7 @@ function firmHtml(sens, kicker = (f) => f.kicker, nSampled = null) {
   const total = F[0].total;
   const factor = Object.fromEntries(sens.factors.map((p) => [p.key, p]));
   const at = (r, e) => ({ ...factor[r.key], end: e, value: factor[r.key][e] });  // para firmIf
-  const intro = `<p>En cada futuro, ${fmt(nF)} supuestos quedan fijos en su valor central${nSampled == null ? "" : ` (los otros ${fmt(nSampled)} se sortean)`}. Para ver si los hallazgos dependen de ellos, llevamos cada uno a su extremo bajo y a su extremo alto, de a uno: ${fmt(total)} variantes de ${fmt(sens.n_oat)} futuros cada una, con los mismos números aleatorios que la corrida normal, así la diferencia es efecto del supuesto. Después los sorteamos todos juntos en ${fmt(sens.n_joint)} futuros. Son ${fmt(sens.n_sims)} simulaciones. La columna de los supuestos centrales usa esos mismos ${fmt(sens.n_oat)} futuros, por eso puede diferir un poco de la cifra de la portada, calculada con más futuros.</p>`;
+  const intro = `<p>En cada futuro, ${fmt(nF)} parámetros quedan fijos en su valor central${nSampled == null ? "" : ` (los otros ${fmt(nSampled)} se sortean)`}. Para ver si los hallazgos dependen de ellos, llevamos cada uno a su extremo bajo y a su extremo alto, de a uno: ${fmt(total)} variantes de ${fmt(sens.n_oat)} futuros cada una, con los mismos números aleatorios que la corrida normal, así la diferencia es efecto del parámetro. Después los sorteamos todos juntos en ${fmt(sens.n_joint)} futuros. Son ${fmt(sens.n_sims)} simulaciones. La columna de los valores centrales usa esos mismos ${fmt(sens.n_oat)} futuros, por eso puede diferir un poco de la cifra de la portada, calculada con más futuros. Se prueban los ${fmt(F.length)} hallazgos que comparan reglas o historias; «No hay destino escrito» describe cuánto varían los futuros y no tiene un criterio de sí o no.</p>`;
   const rows = F.map((f) => `<tr><td>${esc(kicker(f))}<br><span class="range">${esc(f.metric)}</span></td>
     <td data-label="Con los supuestos centrales">${firmValue(f, f.base)}</td>
     <td data-label="Al mover cada supuesto">${firmScalarText(f, f.range[0], f.range[1])}</td>
@@ -692,6 +711,13 @@ function firmHtml(sens, kicker = (f) => f.kicker, nSampled = null) {
   const jointOk = F.filter((f) => f.joint.value != null && f.joint.holds).length;
   const jointRun = F.filter((f) => f.joint.value != null).length;
   let sum = `Se mantienen ${fmt(held)} de las ${fmt(tests)} pruebas (${fmt(F.length)} hallazgos × ${fmt(total)} variantes).`;
+  // parámetros que no mueven ninguna de estas cifras: sus variantes se mantienen por construcción
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const idle = sens.factors.filter((p) => F.every((f) => {
+    const r = f.oat.find((o) => o.key === p.key);
+    return r && same(r.low, f.base) && same(r.high, f.base);
+  })).length;
+  if (idle) sum += ` ${fmt(idle)} de los ${fmt(nF)} parámetros no mueven ninguna de estas cifras (sí otras, como la cuenta de la luz o el diésel), así que sus variantes se mantienen por construcción.`;
   if (jointRun) sum += ` Con todos los supuestos sorteados juntos se mantienen ${jointOk === jointRun ? `los ${fmt(jointOk)}` : `${fmt(jointOk)} de ${fmt(jointRun)}`}.`;
   const ends = (f, keep) => f.oat.flatMap((r) => ["low", "high"].filter((e) => keep(r, e)).map((e) => [r, e]));
   const explain = (f, r, e) => {
@@ -708,7 +734,7 @@ function firmHtml(sens, kicker = (f) => f.kicker, nSampled = null) {
     .map(([f, x]) => `«${esc(kicker(f))}» se mantiene por poco ${x.map(([r, e]) => explain(f, r, e)).join("; y ")}. ${esc(f.criterion)}`);
   const cons = F[0].total_consistent;
   const history = `${cons === total ? `Las ${fmt(total)} variantes` : `${fmt(cons)} de las ${fmt(total)} variantes`} siguen siendo coherentes con la historia. ${esc(sens.hindcast_rule)}`;
-  const limits = `Límites: con ${fmt(sens.n_oat)} futuros por variante, cada porcentaje tiene un error de azar de hasta ${fmt(100 * Math.sqrt(0.25 / sens.n_oat))} puntos; las combinaciones de supuestos solo se prueban en el sorteo conjunto; y quedan números fijos en el código que este análisis no mueve: los pesos con que un proyecto elige comuna, cuánto molesta cada fuente y a qué distancia, quién cuenta como vecino, la desconfianza que deja cada juicio o anulación, las decisiones de la evaluación conjunta y la sensibilidad y el umbral de cada hogar.`;
+  const limits = `Límites: con ${fmt(sens.n_oat)} futuros por variante, cada porcentaje tiene un error estándar de hasta ${fmt(100 * Math.sqrt(0.25 / sens.n_oat))} puntos (±${fmt(196 * Math.sqrt(0.25 / sens.n_oat))} con 95% de confianza); las combinaciones de parámetros solo se prueban en el sorteo conjunto; y quedan números fijos en el código que este análisis no mueve, entre otros: los pesos con que un proyecto elige comuna, cuánto molesta cada fuente y a qué distancia, quién cuenta como vecino, la desconfianza que deja cada juicio, anulación o aprobación por SEIA, el tope de 90% a la probabilidad de juicio, la probabilidad de rediseñar con aire tras una anulación, las decisiones de la evaluación conjunta y la sensibilidad y el umbral de cada hogar.`;
   return `${intro}${table}<p>${sum}</p>${fails.map((t) => `<p>${t}</p>`).join("")}${near.map((t) => `<p>${t}</p>`).join("")}<p class="where">${history}</p><p class="where">${limits}</p>`;
 }
 
@@ -716,19 +742,22 @@ function fillProof() {
   $("#passed").textContent = `${S.story.passed} de ${S.story.total}`;
   if (S.story.n_validation !== undefined) $("#passedKinds").textContent = `(${S.story.n_validation} de validación y ${S.story.n_calibration} de calibración)`;
   const LABEL = {
-    rm_2021: [2021, "Electricidad de los data centers de Santiago", "MW"],
-    google_water: [2024, "Agua usada por Google en Quilicura", "ML"],
-    rm_2025: [2025, "Electricidad de los data centers de Santiago", "MW"],
-    waitlist: [2026, "MW esperando conexión a la red", ""],
-    litigations: [2026, "Juicios contra data centers desde 2012", ""],
-    conflict_pattern: [2026, "Comunas con vecinos organizados", ""],
+    rm_2021: [2021, "Electricidad de los data centers de Santiago", " MW"],
+    rm_2025: [2025, "Electricidad de los data centers de Santiago", " MW"],
+    chile_2025: [2025, "Electricidad de los data centers de todo Chile", " MW"],
+    national_share: [2025, "Parte de la electricidad de Chile que usan", "%"],
+    status: [2026, "Estado de cada proyecto (operando, en obra, en trámite o esperando red)", ""],
   };
   let lastYear = null;
-  $("#proofRows").innerHTML = S.story.checks.map((c) => {
-    const [year, label, unit] = LABEL[c.id];
-    const u = unit ? ` ${unit}` : "";
-    const real = c.id === "conflict_pattern" ? String(c.observed.length) : `${fmt(c.observed)}${u}`;
-    const model = c.id === "conflict_pattern" ? `${c.sim.hits} de ${c.observed.length}` : `${fmt(c.sim.p50)}${u}`;
+  $("#proofRows").innerHTML = S.story.checks.filter((c) => LABEL[c.id]).map((c) => {
+    const [year, label, u] = LABEL[c.id];
+    let real = `${fmt(c.observed)}${u}`;
+    let model = `${fmt(c.sim.p50, c.sim.p50 < 10 ? 1 : 0)}${u}`;
+    if (c.observed && c.observed.low !== undefined) real = `${fmt(c.observed.low)} a ${fmt(c.observed.high)}${u}`;
+    if (c.id === "status") {
+      real = `${fmt(c.observed)} proyectos`;
+      model = `acierta ${fmt(c.sim.accuracy)}% (una regla trivial, ${fmt(c.sim.naive)}%)`;
+    }
     const yr = year === lastYear ? "" : year;
     lastYear = year;
     return `<tr><td>${yr}</td><td>${label}</td><td data-label="Real">${real}</td><td data-label="Modelo">${model}</td><td>${esc(c.src)}</td></tr>`;
@@ -749,7 +778,12 @@ const lazy = {
   "mas-hallazgos": () => fillMoreFindings(),
   firmeza: () => fetch("/api/sensitivity").then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); }).then((sens) => {
     const byId = Object.fromEntries((S.story.findings || []).map((f) => [f.id, f]));
-    $("#firmezaBody").innerHTML = firmHtml(sens, (f) => (byId[f.id] || f).kicker, S.meta.params.filter((p) => p.sample).length);
+    // el nombre con que la página muestra cada hallazgo: el título del capítulo o el de su tarjeta
+    const name = (f) => {
+      const h = document.querySelector(`.chapter[data-finding="${f.id}"] .ch-title`);
+      return h ? h.textContent : (byId[f.id] || f).kicker;
+    };
+    $("#firmezaBody").innerHTML = firmHtml(sens, name, S.meta.params.filter((p) => p.sample).length);
   }),
   matematica: () => { $("#mathBody").replaceChildren($("#mathTpl").content.cloneNode(true)); return Promise.resolve(); },
   chequeos: () => fetch("/api/validation").then((r) => r.json()).then((v) => {
@@ -766,14 +800,15 @@ const lazy = {
     };
     $("#checksBody").innerHTML = `<p>${v.passed} de ${v.total} coinciden. <b>Validación</b>: el modelo nunca se ajustó a ese dato. <b>Calibración</b>: un parámetro se ajustó usando ese dato.</p>
       <table class="data"><thead><tr><th>Pregunta</th><th>Real</th><th>Modelo (rango del 90%)</th><th>Tipo</th><th>Resultado</th></tr></thead><tbody>${
-      v.checks.map((c) => `<tr><td>${esc(c.question)}</td><td>${show(c.observed)} ${c.id === "status" ? "proyectos" : esc(c.unit)}</td><td>${show(c.sim)}</td><td>${esc(c.kind)}</td><td>${c.pass ? "coincide" : "no coincide"}</td></tr>`).join("")
+      v.checks.map((c) => `<tr><td>${esc(c.question)}${c.note ? `<p class="where">${esc(c.note)}</p>` : ""}</td><td>${show(c.observed)} ${c.id === "status" ? "proyectos" : esc(c.unit)}</td><td>${show(c.sim)}</td><td>${esc(c.kind)}</td><td>${c.pass ? "coincide" : "no coincide"}</td></tr>`).join("")
       }</tbody></table>`;
   }),
   supuestos: () => {
     const ps = S.meta.params;
     const sampled = ps.filter((p) => p.sample).length;
-    $("#paramsBody").innerHTML = `<p>${fmt(ps.length)} supuestos: ${fmt(sampled)} se sortean en cada futuro y los otros ${fmt(ps.length - sampled)} quedan en su valor central. Esos ${fmt(ps.length - sampled)} se llevan a sus extremos en <a href="#firmeza" data-open="firmeza">Qué tan firmes son los hallazgos</a>.</p>
-      <table class="data"><thead><tr><th>Supuesto</th><th>Valor</th><th>Rango</th><th>¿Se sortea?</th><th>Tipo</th><th>Fuente</th></tr></thead><tbody>${
+    const kind = (k) => ps.filter((p) => p.kind === k).length;
+    $("#paramsBody").innerHTML = `<p>${fmt(ps.length)} parámetros (${fmt(kind("supuesto"))} supuestos, ${fmt(kind("dato"))} datos y ${fmt(kind("calibrado"))} calibrados): ${fmt(sampled)} se sortean en cada futuro y los otros ${fmt(ps.length - sampled)} quedan en su valor central. Esos ${fmt(ps.length - sampled)} se llevan a sus extremos en <a href="#firmeza" data-open="firmeza">Qué tan firmes son los hallazgos</a>.</p>
+      <table class="data"><thead><tr><th>Parámetro</th><th>Valor</th><th>Rango</th><th>¿Se sortea?</th><th>Tipo</th><th>Fuente</th></tr></thead><tbody>${
       ps.map((p) => `<tr><td>${esc(p.label)}</td><td>${num(p.base)} ${p.unit === "—" ? "" : esc(p.unit)}</td><td>${num(p.low)} a ${num(p.high)}</td><td>${p.sample ? "sí" : "no"}</td><td>${esc(p.kind)}</td><td>${esc(p.src)}</td></tr>`).join("")
       }</tbody></table>`;
     return Promise.resolve();
@@ -791,15 +826,23 @@ const lazy = {
 function loadLazy(d) {
   if (!d || !d.open || d.dataset.loaded || !S.meta || !S.story) return;
   d.dataset.loaded = "1";
-  lazy[d.id]().catch(() => { d.dataset.loaded = ""; });
+  lazy[d.id]().catch(() => {
+    d.dataset.loaded = "";
+    const body = d.querySelector(".detail-body");
+    if (body) body.innerHTML = "<p>No se pudo cargar. Cierra y abre esta parte para reintentar.</p>";
+  });
 }
 Object.keys(lazy).forEach((id) => {
   const d = document.getElementById(id);
   d.addEventListener("toggle", () => loadLazy(d));
 });
 // un enlace directo a una parte (/#firmeza) la abre
-const linked = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
-if (linked && linked.tagName === "DETAILS") linked.open = true;
+function openLinked() {
+  const linked = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
+  if (linked && linked.tagName === "DETAILS") linked.open = true;
+}
+openLinked();
+window.addEventListener("hashchange", openLinked);
 
 // ---------------------------------------------------------------- entradas al hacer scroll
 const io = new IntersectionObserver((entries) => {

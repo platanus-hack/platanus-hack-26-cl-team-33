@@ -139,6 +139,7 @@ main { position: relative; z-index: 1; background: var(--bg); }
 }
 .ch-photo {
   position: absolute; left: 50%; top: 112px; height: 75svh; width: auto; aspect-ratio: 3 / 4;
+  max-width: calc(100vw - 2 * (var(--m) + 36ch));
   object-fit: cover; transform: translateX(-50%);
   transition: transform 900ms var(--ease);
 }
@@ -247,6 +248,15 @@ main { position: relative; z-index: 1; background: var(--bg); }
   .tabs { display: grid; grid-template-columns: repeat(4, 1fr); }
   .tabs button:hover { transform: none; }
 }
+@media (max-width: 1240px) {
+  .chapter { height: auto; min-height: 100svh; }
+  .chapter .field { position: relative; min-height: 100svh; padding: 88px var(--m) var(--m); display: flex; flex-direction: column; gap: 20px; }
+  .ch-title, .ch-text, .ch-link, .ch-photo { position: static; transform: none; }
+  .ch-photo { height: 60svh; max-width: 100%; margin: 0 auto; }
+  .ch-text { max-width: 56ch; }
+  .js .chapter .ch-photo, .js .chapter.in .ch-photo { transform: none; }
+  .js .chapter .field, .js .chapter.in .field { clip-path: none; }
+}
 @media (max-width: 720px) {
   :root { --m: 20px; }
   .hero { grid-template-columns: 1fr; padding-bottom: 0; }
@@ -284,7 +294,7 @@ main { position: relative; z-index: 1; background: var(--bg); }
   .proof-table, .proof-table tbody, .proof-table tr, .proof-table td { display: block; width: auto !important; }
   .proof-table tr { padding: 12px 14px; }
   .proof-table td { padding: 2px 0; }
-  .proof-table td:nth-child(3), .proof-table td:nth-child(4) { display: inline-block; margin-right: 18px; }
+  .proof-table td:nth-child(3), .proof-table td:nth-child(4) { display: inline-block; margin-right: 18px; white-space: normal; }
   .proof-table td[data-label]::before { content: attr(data-label) " "; font-weight: 400; color: var(--muted); }
   .proof-table td:first-child:empty { display: none; }
   .strip { grid-template-columns: 1fr 1fr; height: auto; }
@@ -387,7 +397,7 @@ table.data .range { color: var(--muted); }
 .finding h3 { margin: 0 0 10px; font-size: var(--step-body); font-weight: 600; line-height: 1.3; }
 .finding-stat { display: block; font-size: var(--step-head); letter-spacing: -0.03em; line-height: 1; margin-bottom: 8px; }
 .finding p { margin: 0 0 8px; font-size: var(--step-small); }
-.finding-cost, .finding-firm { color: var(--muted); }
+.finding-cost, .finding-firm, .finding-kicker { color: var(--muted); }
 
 @media (max-width: 1200px) {
   .sim-body { grid-template-columns: 1fr; }
