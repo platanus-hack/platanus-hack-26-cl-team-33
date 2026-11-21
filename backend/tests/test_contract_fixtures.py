@@ -1,10 +1,7 @@
 """Copy to backend/tests/. Verify the fixtures are valid, not clinical truth."""
-import json
 from pathlib import Path
 
-from bedflow.contracts import (
-    CompareRequest, CompareResponse, SimulateRequest, SimulationResult
-)
+from bedflow.contracts import CompareRequest, CompareResponse, SimulateRequest, SimulationResult
 
 FIXTURES = next(
     (parent / "fixtures" for parent in Path(__file__).resolve().parents
