@@ -45,3 +45,27 @@ code to a personal repo:
 Your commits stay mirrored here for judging, while the deploy runs from the repo you control.
 
 Have fun! 🚀
+
+---
+
+## BedFlow Chile — setup & run
+
+Synthetic ED-to-inpatient-bed flow simulator (not validated for real hospital decisions). See `spec/` and `docs/MODEL_LIMITATIONS.md`.
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+pytest                                # contracts, API, experiments (integration tests skip until sim engine exists)
+ruff check backend scripts
+
+# API (one command)
+uvicorn bedflow.api.app:app --app-dir backend --reload   # http://localhost:8000/docs
+
+# Frontend (second shell)
+cd frontend && npm install && npm run dev                # http://localhost:5173
+```
+
+`BEDFLOW_MODE=auto|real|stub` (default `auto`: real engine if `bedflow.sim.engine` exists, else fixture stub). Every API response carries `X-BedFlow-Mode` (`real-engine` or `stub-fixture-not-real`). `BEDFLOW_CORS_ORIGINS` sets allowed browser origins (comma separated).
+
+Endpoints: `POST /api/v1/simulate`, `POST /api/v1/compare`, `GET /health`. OpenAPI: `python scripts/export_openapi.py` → `docs/openapi.json`. Real-engine benchmark backup: `python scripts/run_scenarios.py`.

@@ -1,0 +1,22 @@
+[project]
+name = "bedflow-chile"
+version = "1.0.0"
+description = "BedFlow Chile - synthetic ED-to-inpatient-bed flow simulator"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["backend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# frozen contract file: keep byte-identical to the agreed v1.0 schema
+"backend/bedflow/contracts.py" = ["I001"]
