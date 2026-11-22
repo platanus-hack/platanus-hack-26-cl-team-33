@@ -3,8 +3,8 @@
 Simulador híbrido (agentes + stocks y flujos) de cómo los data centers que llegan a Chile,
 sobre todo al corredor norte de la Región Metropolitana, afectan agua, red eléctrica,
 conflicto y beneficios en cada comuna entre 2012 y 2035. Código en `dcsim/`, interfaz en `web/`.
-La página parte por una calculadora de evaluación conjunta: suma todos los data centers de una
-comuna, con lo que cada uno declaró al SEA (sección 5).
+La página parte por una simulación de evaluación conjunta por comuna: simula juntos todos los
+data centers de una comuna, con lo que cada uno declaró al SEA (sección 5).
 
 Todos los números de este documento salen del código de este repositorio:
 
@@ -14,7 +14,7 @@ Todos los números de este documento salen del código de este repositorio:
 | Hallazgos | `dcsim/explore.py` + `dcsim/findings.py`, modo `anchored` (historia real hasta nov-2026, luego proyección); la historia alternativa de Cerrillos usa el modo `free` | 15.080 (185 configuraciones) y los 200 futuros por regla de la portada |
 | Hipótesis del informe | `dcsim/insights.py`, escenarios predefinidos de `dcsim/policy.py` | 200 por escenario |
 | Qué tan firmes son | `dcsim/sensitivity.py`: cada parámetro fijo en sus extremos y todos sorteados juntos (sección 4) | 76.500 |
-| Calculadora | `POST /api/calc` (`dcsim/server.py`), modo `anchored`, enfriamiento por proyecto desde 2027 (sección 5) | 60 por cálculo en el sitio (100 en local) |
+| Simulación por comuna | `POST /api/calc` (`dcsim/server.py`), modo `anchored`, enfriamiento por proyecto desde 2027 (sección 5) | 60 por cálculo en el sitio (100 en local) |
 
 Las comparaciones usan números aleatorios comunes: cada configuración corre con las mismas
 semillas y los proyectos conocidos sortean de un flujo propio, así la diferencia entre dos
@@ -215,10 +215,10 @@ Límites de este análisis:
 - La regla de historia cuenta juicios, no a qué proyectos se demanda (ver AWS Huechuraba en
   la sección 1).
 
-## 5. La calculadora y lo declarado al SEA
+## 5. La simulación por comuna y lo declarado al SEA
 
-Hoy cada data center se evalúa solo. La calculadora hace la pregunta que esa evaluación no
-hace: con todo lo que opera, se construye, está en trámite o espera red en una comuna,
+Hoy cada data center se evalúa solo. Esta parte hace la pregunta que esa evaluación no hace,
+como un "qué pasaría si" simulado y no como una suma de planilla: con todo lo que opera, se construye, está en trámite o espera red en una comuna,
 ¿alcanzan el agua y la red? Suma todos los data centers de la comuna, con lo que cada uno
 declaró al SEA, y deja elegir agua o aire desde 2027 para los que aún no operan. Está pensada
 para la evaluación ambiental, que es donde hoy se discute cada proyecto:
@@ -246,6 +246,12 @@ año).
 | Agua de sus data centers | 17,9 L/s (15,5–20,6): el agua de ~3.100 hogares, 4,4% de lo que usan sus hogares | 42,2 L/s (28,0–60,8): 2,4 veces más, el agua de ~7.300 hogares (10,4%). Más alta en 60 de 60 futuros |
 | Electricidad de sus data centers | 188 MW (160–220): 76,5% de la electricidad de la comuna | 170 MW: 18 MW menos. Más baja en 59 de 60 |
 | Vecinos movilizados | 46% (36–68%) | 64% (54–88%). Más alto en 59 de 60 |
+| Futuros en que cada uno opera en 2035 | Microsoft SCL03 93%, Cirion nuevo 95%, Ascenty Santiago 3 92%, Data Hall 98% | 87%, 80%, 80% y 85%: con agua hay más oposición, juicios, anulaciones y proyectos que desisten o siguen esperando red |
+
+Esa última fila es lo que una suma no puede dar: no sale de multiplicar MW por un factor, sino
+de que en cada futuro los proyectos compiten por la misma red y la oposición los lleva a
+tribunales. Por eso el cambio de electricidad (−18 MW) es mayor que el puro efecto del
+enfriamiento: parte viene de proyectos que no llegan a operar.
 
 Con lo declarado, la red libre del nodo Norte, que Quilicura comparte con Lampa, Colina y
 Huechuraba, queda en 12 MW (1–48) a fines de 2035 (23 MW en 2030). En la mediana, ningún
@@ -273,7 +279,7 @@ rango de 0 a 42,7 L/s, y los vecinos movilizados en 54% frente a 36% con lo decl
 Solo se muestra, sin cambiar el modelo: `dcsim/sea.py` guarda lo declarado por 23 proyectos
 (agua promedio o máxima, derechos de agua, MW, enfriamiento, diésel), con enlace al documento y
 su confianza (12 alta: documento del SEA o resolución oficial; 11 media: prensa que cita el
-expediente). La calculadora lo muestra junto a lo que usa el modelo. Donde difieren, el modelo
+expediente). La página lo muestra junto a lo que usa el modelo. Donde difieren, el modelo
 mantiene su valor y lo dice. Por ejemplo, ODATA San Bernardo tiene 40,6 MW según prensa y el
 modelo usa 18 MW, porque el inventario está calibrado con los 311 MW instalados. Microsoft SCL03
 usa agua unas 600 horas al año y el modelo lo trata como aire. AWS Padre Hurtado fue aprobado
@@ -297,7 +303,7 @@ servidores. Declara 696 t de diésel (871,8 t en el diseño de 2020). Los "7,6 m
 al día" que circulan no aparecen en los documentos de Cerrillos: coinciden con el diseño de
 Google en Canelones, Uruguay (confianza media).
 
-### Límites de la calculadora
+### Límites de la simulación por comuna
 
 - Usa 60 futuros: los rangos del 90% son aproximados. "En 59 de 60" cuenta pares de futuros
   con las mismas semillas.

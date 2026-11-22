@@ -6,7 +6,7 @@
   "project-oneliner-spanish": "Suma todos los data centers de tu comuna: ¿alcanzan el agua y la red?",
 
   // Brief description of your project (in Spanish).
-  "project-description-spanish": "Cada data center se evalúa por separado y nadie suma el efecto de todos. Aterriza es una calculadora de evaluación conjunta para la evaluación ambiental: suma todos los data centers de una comuna, con lo que cada uno declaró al SEA, y muestra cuánta agua y red quedan si los que faltan enfrían con agua o con aire. En Quilicura, enfriar con agua los 4 que faltan da 2,4 veces más agua y 18 MW menos de electricidad. Detrás hay una simulación mes a mes hasta 2035, con permisos, la fila de conexión del CEN, tribunales y 2.300 hogares sintéticos, que reproduce 14 de 14 datos reales de 2012 a 2026 (6 de validación y 8 de calibración).",
+  "project-description-spanish": "Cada data center se evalúa por separado y nadie suma el efecto de todos. Aterriza simula su efecto conjunto para la evaluación ambiental: junta todos los data centers de una comuna, con lo que cada uno declaró al SEA, y muestra cuánta agua y red quedan si los que faltan enfrían con agua o con aire. En Quilicura, enfriar con agua los 4 que faltan da 2,4 veces más agua y 18 MW menos de electricidad. Detrás hay una simulación mes a mes hasta 2035, con permisos, la fila de conexión del CEN, tribunales y 2.300 hogares sintéticos, que reproduce 14 de 14 datos reales de 2012 a 2026 (6 de validación y 8 de calibración).",
 
   // Public URL where your project is deployed and running.
   // Must be a valid URL, for example: https://my-project.vercel.app

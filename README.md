@@ -15,9 +15,11 @@ team-33
 ## Aterriza
 
 Chile aprueba los data centers de a uno, pero se suman en la misma red, el mismo acuífero y las
-mismas comunas, y nadie suma el efecto de todos. Aterriza es una calculadora de evaluación
-conjunta para ese momento: con todo lo aprobado y en trámite en una comuna, ¿alcanzan el agua y
-la red?, ¿y si los proyectos que faltan enfrían con aire en vez de agua? Está pensada para que el
+mismas comunas, y nadie suma el efecto de todos. Aterriza simula ese efecto conjunto, comuna por
+comuna: si se construye todo lo aprobado y en trámite, ¿alcanzan el agua y la red?, ¿y si los
+proyectos que faltan enfrían con aire en vez de agua? No es una suma de planilla: en cada futuro
+los proyectos compiten por la misma red, esperan en la fila del CEN, generan oposición y pueden
+terminar en tribunales. Está pensada para que el
 SEA, el municipio, los vecinos y la empresa discutan sobre los mismos números durante la
 evaluación ambiental. Detrás hay una simulación del efecto acumulado, mes a mes de 2012 a 2035, con un modelo
 híbrido de agentes y stocks: proyectos que eligen comuna y enfriamiento, el SEA, la fila de
@@ -26,7 +28,7 @@ ubicaciones. Mide agua, electricidad, vecinos movilizados, juicios e inversión,
 comuna, en 200 futuros por regla.
 
 **Demo: https://aterriza.onrender.com** (plan gratis de Render: tras 15 minutos sin visitas, la
-primera carga tarda 20 a 30 s; un cambio en la calculadora o "Tu regla" tarda 40 a 60 s).
+primera carga tarda 20 a 30 s; un cambio en la simulación por comuna o "Tu regla" tarda 40 a 60 s).
 
 ## Qué puedes hacer en la página
 
@@ -51,12 +53,14 @@ primera carga tarda 20 a 30 s; un cambio en la calculadora o "Tu regla" tarda 40
 ## Hallazgos principales
 
 De una batería de 15.080 simulaciones, de los 200 futuros por regla de la portada y de la
-calculadora (60 futuros). El resto, con su método, en [FINDINGS.md](FINDINGS.md).
+simulación por comuna (60 futuros). El resto, con su método, en [FINDINGS.md](FINDINGS.md).
 
 - **Quilicura, todo sumado.** Con lo que declaró cada proyecto, sus data centers usan en 2035
   17,9 L/s de agua (la de ~3.100 hogares) y 188 MW. Si los 4 que aún no operan enfriaran con
   agua desde 2027: 42,2 L/s (2,4 veces más), 18 MW menos de electricidad y 64% de vecinos
-  movilizados en vez de 46%.
+  movilizados en vez de 46%. Y cada uno de esos 4 opera en 2035 en 80% a 87% de los futuros, en
+  vez de 92% a 98% con aire: la simulación muestra los juicios, anulaciones y esperas que una
+  suma no ve.
 - **El freno es la red, no el permiso.** Con permisos 4 veces más rápidos, la RM pasa de 818 a
   820 MW en 2030: solo 0,3% más. Los proyectos aprobados igual esperan conexión eléctrica.
 - **No hay que elegir.** Aire + fondo comunitario + incentivo al norte mejoran a la vez agua,
@@ -136,11 +140,11 @@ mismo código y la misma máquina, `precompute` y `findings` rehacen byte a byte
 | `dcsim/explore.py` | Batería de 185 configuraciones: factorial de 7 palancas, barridos, contrafactuales. |
 | `dcsim/findings.py` | Resume la batería en 7 hallazgos (`cache/findings.json`). |
 | `dcsim/sensitivity.py` | Qué tan firmes son los hallazgos: 40 parámetros fijos en sus extremos y sorteados juntos (`cache/sensitivity.json`). |
-| `dcsim/sea.py` | Lo que cada data center declaró al SEA (agua, energía, enfriamiento, diésel) con su fuente; se muestra en la calculadora. |
+| `dcsim/sea.py` | Lo que cada data center declaró al SEA (agua, energía, enfriamiento, diésel) con su fuente; se muestra en la simulación por comuna. |
 | `dcsim/precompute.py` | Rehace los resultados de la portada y "como hoy" con 60 y 100 futuros para "Tu regla"; borra los obsoletos. |
 | `dcsim/server.py` | API (FastAPI) y archivos estáticos. |
-| `web/` | La página: `index.html`, `story.js`, `calc.js` (la calculadora), `story.css` e `img/`. |
-| `tests/` | Determinismo, palancas, prueba con el pasado, invariantes del motor y de la API, "Tu regla" en las mismas semillas, la calculadora (historia intacta, aire cuesta electricidad), sensibilidad. |
+| `web/` | La página: `index.html`, `story.js`, `calc.js` (la simulación por comuna), `story.css` e `img/`. |
+| `tests/` | Determinismo, palancas, prueba con el pasado, invariantes del motor y de la API, "Tu regla" en las mismas semillas, la simulación por comuna (historia intacta, aire cuesta electricidad), sensibilidad. |
 | `cache/` | Versionados: `findings.json`, `sensitivity.json`, los `*_200_*.json` de la portada y `anchored_60_*`/`anchored_100_*` ("como hoy" para "Tu regla"), así el servidor no simula en una CPU chica. `explore_raw.json` (~32 MB) no: solo lo rehace `explore`. |
 | `render.yaml` | El servicio en Render. |
 | `pyproject.toml`, `uv.lock` | Dependencias: NumPy, FastAPI, uvicorn; pytest, ruff y httpx para desarrollo. |
@@ -157,7 +161,7 @@ mismo código y la misma máquina, `precompute` y `findings` rehacen byte a byte
 | `POST /api/run` | Simula `{"policy": {...}}` (campos de `Policy`; 422 si no valen) en `DCSIM_N_CUSTOM` futuros, semillas 0 a N−1 (422 también si sobran campos o llega un NaN). Suma `baseline` (`n` y medianas de 2035 de seguir como hoy en esas semillas) y `compare`: por cifra, en cuántos futuros la regla queda mejor, peor o igual (`better`, `worse`, `same`, `n`); para los MW operando, con más o con menos (`more`, `less`). |
 | `GET /api/baseline` | Seguir como hoy en esas mismas semillas, completo (el mapa de "Tu regla" compara contra esto). |
 | `GET /api/sensitivity` | El análisis de sensibilidad completo (`cache/sensitivity.json`). |
-| `POST /api/calc` | La calculadora: `{"cooling": {"<proyecto>": "aire" \| "evaporativo"}}` para los proyectos que aún no operan (cambio desde 2027). Devuelve el ensamble de los mismos futuros que "Tu regla" (por comuna, por proyecto y la red libre de cada nodo) y `compare`: por comuna, en cuántos futuros queda mejor, peor o igual que lo declarado. Sin cambios responde al instante. |
+| `POST /api/calc` | La simulación por comuna: `{"cooling": {"<proyecto>": "aire" \| "evaporativo"}}` para los proyectos que aún no operan (cambio desde 2027). Devuelve el ensamble de los mismos futuros que "Tu regla" (por comuna, por proyecto y la red libre de cada nodo) y `compare`: por comuna, en cuántos futuros queda mejor, peor o igual que lo declarado. Sin cambios responde al instante. |
 | `GET /api/validation` | Los 14 chequeos con sus bandas y fuentes. |
 | `GET /api/insights` | Las 6 hipótesis y el efecto de cada regla en 2030 y 2035. |
 | `GET /api/communes/{sid}/{year}` | Balance por comuna en un año. |
@@ -169,12 +173,12 @@ mismo código y la misma máquina, `precompute` y `findings` rehacen byte a byte
 Render, con `render.yaml` (plan free): `uv sync --frozen --no-dev`, arranque con `uvicorn` y
 health check en `/api/status`. Al partir no simula: lee de `cache/` los 2.200 futuros de la
 portada (10 reglas × 200 y la validación) y "como hoy" con los futuros de "Tu regla", que es
-también lo declarado en la calculadora. "Tu regla" y los cambios de la calculadora sí simulan.
+también lo declarado en la simulación por comuna. "Tu regla" y sus cambios sí simulan al pedirlos.
 
 | Variable | En Render | Si falta | Qué controla |
 |---|---|---|---|
 | `DCSIM_WORKERS` | 1 | hasta 8 | Procesos que simulan; 1 porque el plan free tiene 512 MB. |
-| `DCSIM_N_CUSTOM` | 60 | 100 | Futuros de "Tu regla" y de la calculadora, comparados con lo declarado en esas mismas semillas. |
+| `DCSIM_N_CUSTOM` | 60 | 100 | Futuros de "Tu regla" y de la simulación por comuna, comparados con lo declarado en esas mismas semillas. |
 | `UV_COMPILE_BYTECODE` | 1 | — | Compila el bytecode al construir: el plan free parte de la imagen tras dormir y así no recompila al despertar. |
 
 ## Fuentes de datos
@@ -200,7 +204,7 @@ técnicos. Las cifras de prensa no son fuentes primarias y las coordenadas son a
   motor completo y la validación. Desde ahí la historia es incremental: interfaz y API, batería
   de simulaciones, hallazgos, despliegue, correcciones de una revisión y el análisis de
   sensibilidad. Tras el feedback del mentor (21-nov, noche) la página se centra en la
-  calculadora de evaluación conjunta y el modelo se calibra con lo declarado al SEA. La sección
+  simulación de evaluación conjunta por comuna y el modelo se calibra con lo declarado al SEA. La sección
   "Coloca un data center" quedó fuera; está guardada en la rama `person-a/coloca-un-dc-archivo`.
 - **Integración.** Mientras `main` estuvo vacía, el trabajo siguió en las ramas `person-a/*`;
   después se integró a `main` por PR. Las ramas `judge/*` de los merges son las correcciones de

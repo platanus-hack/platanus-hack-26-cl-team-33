@@ -20,13 +20,13 @@
         <a class="wordmark" href="/">Aterriza</a>
         <div class="hero-talk">
           <p class="hero-lead">Simulamos qué pasa con el agua, la luz y los vecinos de Santiago cuando los data centers se suman.</p>
-          <a class="btn" href="#calculadora">Calcular una comuna</a>
+          <a class="btn" href="#calculadora">Simular una comuna</a>
           <a class="hero-alt" href="#simular">o prueba una regla para todo Santiago</a>
         </div>
       </div>
       <div class="hero-right">
         <nav class="nav" aria-label="Secciones">
-          <a href="#calculadora">Calcular</a>
+          <a href="#calculadora">Tu comuna</a>
           <a href="#simular">Simular</a>
           <a href="#hallazgos">Hallazgos</a>
           <a href="#prueba">¿Funciona?</a>
@@ -47,7 +47,7 @@
     <section class="calc" id="calculadora" aria-labelledby="calc-title">
       <div class="sim-head" data-rise>
         <h2 id="calc-title" class="head"><span class="soft">Con todo lo aprobado y en trámite,</span> ¿alcanza el agua y la red?</h2>
-        <p class="calc-lead">Cada data center se evalúa solo. Aquí sumamos todos los de una comuna: los que operan, los que se construyen, los que están en trámite y los que esperan red. Así el SEA, el municipio y los vecinos discuten las mismas cifras durante la evaluación ambiental.</p>
+        <p class="calc-lead">¿Qué pasa si se construye todo lo aprobado y en trámite en una comuna? Cada data center se evalúa solo; aquí los simulamos juntos, mes a mes hasta 2035, en <span data-calc-n>60</span> futuros: compiten por la misma red, esperan en la fila del CEN, generan oposición y pueden terminar en tribunales. Así el SEA, el municipio y los vecinos discuten las mismas cifras en la evaluación ambiental. A diferencia de <a href="#simular">«Tu regla»</a>, que cambia las reglas para todo Santiago, aquí cambias proyectos concretos de una comuna.</p>
       </div>
       <ul class="calc-roles" data-rise>
         <li><b>SEA y servicios</b><span>¿Alcanzan el agua y la red con todo lo ya aprobado?</span></li>
@@ -59,8 +59,8 @@
           <label>Comuna
             <select id="calcCommune" name="commune" disabled><option>Cargando…</option></select></label>
           <div class="calc-projects" id="calcProjects"><p class="custom-note">Cargando los proyectos…</p></div>
-          <button class="btn" type="submit" id="calcRun" disabled>Calcular</button>
-          <p class="custom-note" id="calcNote" aria-live="polite">Elige agua o aire para los que aún no operan y presiona Calcular.</p>
+          <button class="btn" type="submit" id="calcRun" disabled>Simular</button>
+          <p class="custom-note" id="calcNote" aria-live="polite">Elige agua o aire para los que aún no operan y presiona Simular.</p>
         </form>
         <div class="numbers calc-results" id="calcResults" data-rise>
           <div class="calc-top">
@@ -333,7 +333,7 @@
       </div>
       <div class="close-field">
         <h2 id="close-title" class="close-statement" data-rise>Ahora <a href="#simular" data-tab="custom">arma tu propia regla</a>.</h2>
-        <p class="close-text" data-rise>Suma todos los data centers de una comuna en la <a href="#calculadora">calculadora</a>, o elige cada palanca y mira, comuna por comuna, qué le pasa a la gente hasta 2035.</p>
+        <p class="close-text" data-rise>Suma todos los data centers de una comuna en la <a href="#calculadora">simulación por comuna</a>, o elige cada palanca y mira, comuna por comuna, qué le pasa a la gente hasta 2035.</p>
         <p class="close-small" data-rise><span id="closeStats">15.080 simulaciones, 200 futuros por regla, 14 de 14 chequeos con datos reales.</span><br>Hecho en 36 horas en Platanus Hack 26, Santiago.</p>
       </div>
     </section>
@@ -342,7 +342,7 @@
   <footer class="footer">
     <div class="foot-cols">
       <div><b>Aterriza</b><span>Simulador del efecto acumulado de los data centers en las comunas de Chile, 2012 a 2035.</span></div>
-      <div><b>Secciones</b><a href="#calculadora">Calcular una comuna</a><a href="#simular">Simular una regla</a><a href="#hallazgos">Hallazgos</a><a href="#prueba">La prueba</a><a href="#detalle">Detalle técnico</a></div>
+      <div><b>Secciones</b><a href="#calculadora">Simular una comuna</a><a href="#simular">Simular una regla</a><a href="#hallazgos">Hallazgos</a><a href="#prueba">La prueba</a><a href="#detalle">Detalle técnico</a></div>
       <div><b>Datos</b><span>Informe de investigación, nov-2026</span><span>CEN, DGA, SEA, Censo 2017</span><span>Las cifras de prensa no son fuentes primarias</span></div>
       <div><b>Equipo 33</b><span>Platanus Hack 26: Santiago</span><span>Track Simulations</span></div>
     </div>

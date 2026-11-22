@@ -1,4 +1,4 @@
-/* Aterriza: calculadora de evaluación conjunta. Suma todos los data centers de una comuna y deja
+/* Aterriza: simulación de evaluación conjunta por comuna. Suma todos los data centers de una comuna y deja
    cambiar desde 2027 el enfriamiento de los que aún no operan. Usa $, fmt y esc de story.js, que
    llama a initCalc(meta) al llegar /api/meta. */
 "use strict";
@@ -63,7 +63,7 @@
       renderResults();
       updateNote();
     }).catch(() => {
-      $("#calcSummary").textContent = "No se pudo cargar la calculadora. Recarga la página para reintentar.";
+      $("#calcSummary").textContent = "No se pudo cargar la simulación de la comuna. Recarga la página para reintentar.";
     });
   }
 
@@ -120,27 +120,13 @@
     return p.pre_existing ? "operando" : "anunciado";
   }
 
-  // el trade-off a operación plena, con los valores centrales del modelo (params.py): cuánta agua
-  // usa enfriando con agua y cuánta electricidad más pide enfriando con aire. Es solo ingeniería;
-  // los resultados de la derecha además incluyen permisos, la fila de la red y tribunales.
-  function tradeOff(p) {
-    const v = Object.fromEntries(CAL.meta.params.map((x) => [x.key, x.base]));
-    const mw = p.it_mw * v.lf_max;  // MW de servidores con la carga típica
-    const water = mw * v.pue_evap * 1000 * v.wue_evap / 3600;
-    const extra = mw * (v.pue_air - v.pue_evap);
-    const peak = mw * (v.pue_air * v.peak_pue_ratio - v.pue_evap * (1 + 0.6 * (v.peak_pue_ratio - 1)));
-    const homes = water * 86400 / 500;
-    return `A plena carga: con agua usa ~${lsTxt(water)} L/s (el agua de ${fmt(homes)} hogares); con aire, ~${mwTxt(extra)} MW más de electricidad (~${mwTxt(peak)} MW en verano).`;
-  }
-
   function coolCell(p) {
     if (!canSwitch(p)) return esc(COOL[p.cooling_now] || p.cooling_now);
     const c = current(p);
     const btn = (k, label) => `<button type="button" data-pid="${esc(p.id)}" data-cool="${k}" aria-pressed="${c === k}">${label}</button>`;
     const note = c !== p.cooling_now ? `declarado ${COOL[p.cooling_now]}; cambia desde 2027` : wasText(p);
     return `<div class="seg" role="group" aria-label="Enfriamiento de ${esc(p.name)} desde 2027">${btn("evaporativo", "Agua")}${btn("aire", "Aire")}</div>`
-      + `<span class="range" data-was="${esc(p.id)}">${esc(note)}</span>`
-      + `<span class="range calc-trade">${esc(tradeOff(p))}</span>`;
+      + `<span class="range" data-was="${esc(p.id)}">${esc(note)}</span>`;
   }
 
   // lo declarado al SEA, si existe; si no, de dónde sale lo que usamos
@@ -171,12 +157,13 @@
       <td data-label="Hoy">${esc(statusText(p))}</td>
       <td data-label="Servidores">${mwTxt(p.it_mw)} MW${p.request_mw ? `<span class="range">pidió ${fmt(p.request_mw)} MW al CEN</span>` : ""}</td>
       <td data-label="Enfriamiento">${coolCell(p)}</td>
+      <td data-label="Simulado" data-sim="${esc(p.id)}"><span class="range">…</span></td>
       <td data-label="Declarado al SEA">${seaCell(p)}</td></tr>`).join("");
     const mw = anon.reduce((a, p) => a + p.it_mw, 0);
-    const anonRow = anon.length ? `<tr class="calc-anon"><td colspan="5">${anon.length === 1
+    const anonRow = anon.length ? `<tr class="calc-anon"><td colspan="6">${anon.length === 1
       ? "1 proyecto sin nombre público (un supuesto que cuadra el inventario)"
       : `${fmt(anon.length)} proyectos sin nombre público (supuestos que cuadran el inventario)`}: ${mwTxt(mw)} MW</td></tr>` : "";
-    $("#calcProjects").innerHTML = `<table class="data calc-table"><thead><tr><th scope="col">Proyecto</th><th scope="col">Hoy</th><th scope="col">MW de servidores</th><th scope="col">Enfriamiento</th><th scope="col">Declarado al SEA</th></tr></thead><tbody>${rows}${anonRow}</tbody></table>`;
+    $("#calcProjects").innerHTML = `<table class="data calc-table"><thead><tr><th scope="col">Proyecto</th><th scope="col">Hoy</th><th scope="col">MW de servidores</th><th scope="col">Enfriamiento</th><th scope="col">Cómo termina, simulado <span data-cyear-label>2035</span></th><th scope="col">Declarado al SEA</th></tr></thead><tbody>${rows}${anonRow}</tbody></table>`;
   }
 
   // ---------------------------------------------------------------- calcular
@@ -189,10 +176,10 @@
     const n = fmt(CAL.meta.calc.n);
     let t;
     if (!CAL.base) t = "Cargando lo declarado…";
-    else if (stale && Object.keys(ch).length) t = `Cambiaste el enfriamiento. Presiona Calcular: se simulan ${n} futuros y puede tardar hasta un minuto.`;
-    else if (stale) t = "Volviste a lo declarado. Presiona Calcular para verlo.";
+    else if (stale && Object.keys(ch).length) t = `Cambiaste el enfriamiento. Presiona Simular: se simulan ${n} futuros y puede tardar hasta un minuto.`;
+    else if (stale) t = "Volviste a lo declarado. Presiona Simular para verlo.";
     else if (key !== "{}") t = `Listo: con tus cambios, comparado con lo declarado en los mismos ${n} futuros.`;
-    else t = "Elige agua o aire para los que aún no operan y presiona Calcular.";
+    else t = "Elige agua o aire para los que aún no operan y presiona Simular.";
     $("#calcNote").textContent = t;
   }
 
@@ -311,6 +298,7 @@
       ? `con ${Object.keys(ch).length === 1 ? "un cambio" : `${fmt(Object.keys(ch).length)} cambios`} desde 2027: ${Object.entries(ch).map(([pid, cool]) => `${esc(meta.projects.find((p) => p.id === pid).name)} ${COOL[cool]}`).join(", ")}`
       : "con el enfriamiento que declaró cada proyecto";
     $("#calcSummary").innerHTML = `<b>${esc(c.name)}</b>, ${how}. ${sum}`;
+    fillSim();
 
     const yi = meta.years.indexOf(CAL.year);
     const i = CAL.ci;
@@ -371,6 +359,26 @@
   }
 
   // lo que cambia cada proyecto: su propia agua y electricidad (valor típico) y si llega a operar
+  // en qué estado termina cada proyecto en los futuros simulados (permisos, red, tribunales):
+  // es lo que una planilla no puede dar. Con cambios, se compara con lo declarado.
+  const STATES = [[5, "opera"], [4, "en obra"], [2, "espera red"], [3, "en tribunales"], [1, "en trámite"], [6, "desiste"]];
+  function fillSim() {
+    const r = CAL.res;
+    const b = CAL.base;
+    if (!r) return;
+    const yi = CAL.meta.years.indexOf(CAL.year);
+    document.querySelectorAll("[data-cyear-label]").forEach((el) => { el.textContent = CAL.year; });
+    document.querySelectorAll("#calcProjects [data-sim]").forEach((td) => {
+      const pi = CAL.meta.projects.findIndex((p) => p.id === td.dataset.sim);
+      if (pi < 0) return;
+      const sp = r.projects.status_prob[pi][yi];
+      const parts = STATES.filter(([k]) => sp[k] >= 0.05 || (k === 5 && sp[k] > 0)).map(([k, label]) => `${label} ${pct(sp[k])}`);
+      const op0 = b && b !== r ? b.projects.status_prob[pi][yi][OPER] : null;
+      const vs = op0 != null && Math.abs(sp[OPER] - op0) >= 0.01 ? `<span class="range">declarado: opera ${pct(op0)}</span>` : "";
+      td.innerHTML = `${parts.join(" · ") || "aún no se anuncia"}${vs}`;
+    });
+  }
+
   function renderChanges(ch) {
     const el = $("#calcChanges");
     if (!ch) { el.hidden = true; el.innerHTML = ""; return; }

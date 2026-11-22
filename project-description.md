@@ -4,7 +4,7 @@
 
 Chile aprueba los data centers de a uno, y desde el DS 17 casi siempre sin participación ciudadana. Pero se suman en la misma red eléctrica, el mismo acuífero y las mismas comunas: Quilicura, Lampa, Cerrillos, Tiltil. En Santiago ya hay 1.420 MW de proyectos esperando conexión a una red saturada.
 
-Cada data center se evalúa por separado y nadie suma el efecto de todos. Aterriza es una calculadora de evaluación conjunta para el momento en que se pelea hoy, la evaluación ambiental: el SEA, el municipio, los vecinos y la empresa miran los mismos números. Suma todos los data centers de una comuna, con lo que cada uno declaró al SEA, y deja cambiar la palanca que más pesa: enfriar con agua o con aire (menos agua es más electricidad). Detrás hay una simulación mes a mes hasta 2035, con permisos, la fila de conexión del CEN, tribunales y vecinos.
+Cada data center se evalúa por separado y nadie suma el efecto de todos. Aterriza simula ese efecto conjunto, comuna por comuna, para el momento en que se pelea hoy, la evaluación ambiental: el SEA, el municipio, los vecinos y la empresa miran los mismos números. Suma todos los data centers de una comuna, con lo que cada uno declaró al SEA, y deja cambiar la palanca que más pesa: enfriar con agua o con aire (menos agua es más electricidad). Detrás hay una simulación mes a mes hasta 2035, con permisos, la fila de conexión del CEN, tribunales y vecinos.
 
 ## Qué puedes hacer
 
@@ -16,9 +16,9 @@ Cada data center se evalúa por separado y nadie suma el efecto de todos. Aterri
 
 ## Lo que encontramos
 
-En una batería de 15.080 simulaciones, en los 200 futuros de cada regla y en la calculadora (60 futuros):
+En una batería de 15.080 simulaciones, en los 200 futuros de cada regla y en la simulación por comuna (60 futuros):
 
-- **Quilicura, todo sumado.** Con lo que declaró cada proyecto, sus data centers usan en 2035 17,9 L/s de agua (la de ~3.100 hogares) y 188 MW. Si los 4 que aún no operan enfriaran con agua desde 2027, usarían 2,4 veces más agua (42,2 L/s) y 18 MW menos de electricidad, y los vecinos movilizados subirían de 46% a 64%.
+- **Quilicura, todo sumado.** Con lo que declaró cada proyecto, sus data centers usan en 2035 17,9 L/s de agua (la de ~3.100 hogares) y 188 MW. Si los 4 que aún no operan enfriaran con agua desde 2027, usarían 2,4 veces más agua (42,2 L/s) y 18 MW menos de electricidad, y los vecinos movilizados subirían de 46% a 64%. Con más oposición y juicios, cada uno de esos 4 llegaría a operar en 80% a 87% de los futuros, en vez de 92% a 98% con aire.
 - **El freno es la red, no el permiso.** Con permisos cuatro veces más rápidos, Santiago tendría solo 0,3% más MW de data centers en 2030. Los proyectos aprobados igual esperan conexión eléctrica.
 - **No hay que elegir entre inversión y comunidad.** Enfriamiento por aire, un fondo comunitario y un incentivo al norte mejoran a la vez agua, conflicto, juicios e inversión en 82% de los futuros, y la cuenta de la luz no sube más (1,8% en vez de 2,1%) porque parte de la demanda se va al norte, donde sobra energía solar (si allá no presiona la tarifa).
 - **El agua decide el juicio.** Si Google hubiera enfriado Cerrillos con aire en 2019, la probabilidad de juicio habría bajado de 78% a 4%, y a fines de 2023 habría estado operando en 90% de los futuros.
