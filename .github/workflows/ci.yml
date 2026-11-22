@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      # Las mismas versiones de uv.lock que en Render y en local
+      - run: uv sync --frozen
+      # Sin "ruff format --check": reformatear los archivos del modelo cambia su huella y obliga a
+      # recalcular cache/ (ver README)
+      - run: uv run ruff check .
+      # Rápido porque lee los resultados versionados en cache/
+      - run: uv run pytest -q

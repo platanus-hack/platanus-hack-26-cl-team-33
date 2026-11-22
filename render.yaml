@@ -1,0 +1,22 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+# Servicio en vivo: https://aterriza.onrender.com (creado con estos mismos valores)
+# El servidor parte leyendo los resultados precalculados de cache/ (python -m dcsim.precompute).
+services:
+  - type: web
+    name: aterriza
+    runtime: python
+    plan: free                # se duerme tras 15 min sin visitas; para la demo, subir a standard (1c-2g, 1 CPU, 2 GB)
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    startCommand: .venv/bin/uvicorn dcsim.server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/status
+    envVars:
+      - key: DCSIM_WORKERS      # un solo proceso: el plan free tiene 512 MB
+        value: "1"
+      - key: DCSIM_N_CUSTOM     # futuros que corre "Tu regla": 60 en free (~50 s), 100 en standard
+        value: "60"
+      - key: DCSIM_N_PLACE      # futuros de "Coloca un data center" (2 corridas c/u): 20 en free (~35 s), 40 en standard
+        value: "20"
+      - key: UV_COMPILE_BYTECODE  # compila .pyc al construir: el plan free parte de la imagen al despertar
+        value: "1"
+      - key: PYTHON_VERSION     # la misma versión con la que se probó localmente
+        value: "3.12.16"

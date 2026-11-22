@@ -1,0 +1,16 @@
+{
+  // Your project's name, as it will appear on the voting page.
+  "project-name": "Aterriza",
+
+  // Short one-line summary of your project (in Spanish).
+  "project-oneliner-spanish": "Simula el impacto de los data centers en tu comuna",
+
+  // Brief description of your project (in Spanish).
+  "project-description-spanish": "Aterriza simula qué le pasa a la gente cuando los data centers se suman en Santiago y Chile hasta 2035: agua, electricidad, vecinos, juicios e inversión, comuna por comuna. Es un modelo de agentes con los proyectos conocidos y 2.300 hogares sintéticos cuya oposición cambia permisos y ubicaciones. Reproduce 14 de 14 datos reales entre 2012 y 2026 (6 de validación y 8 de calibración). Permite probar reglas, como evaluar los proyectos en conjunto o prohibir enfriar con agua, en 200 futuros posibles, y colocar tu propio data center. 5 de sus 6 hallazgos revisados resisten llevar cada parámetro fijo a sus extremos.",
+
+  // Public URL where your project is deployed and running.
+  // Must be a valid URL, for example: https://my-project.vercel.app
+  // If your project is an app, put the download link here instead
+  // (for example, a URL to download an APK).
+  "deploy-url": "https://aterriza.onrender.com"
+}
