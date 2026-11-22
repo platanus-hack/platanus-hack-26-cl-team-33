@@ -315,7 +315,8 @@ PROJECTS: list[Project] = [
              "2° Tribunal Ambiental anula parcialmente la RCA (feb-2024)",
              "Google desiste (jul-2024)", "Reingresa como pertinencia, 63 chillers por aire "
              "(jul-2026)", "SEA RM: no requiere SEIA (oct-2026)"),
-       src="Subestación de 120 MW (TI supuesta 80 MW), 44 generadores, ~696 t de combustible."),
+       src="Subestación de 120 MW (TI supuesta 80 MW), 44 generadores, ~696 t de combustible.",
+       extra={"cooling_now": "aire"}),
     _p(id="campo_lampa", name="Campo de Datos Lampa", operator="Copenhagen Infrastructure "
        "Partners", commune="lampa", lat=-33.337, lon=-70.763, it_mw=100, cooling="aire",
        announce="2024-06", fuel_t=511, capex_musd=850, dist_homes_m=50,

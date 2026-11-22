@@ -193,8 +193,11 @@ class Run:
                  params: dict | None = None, overrides: dict | None = None,
                  user_dc: dict | None = None, pop: dict | None = None):
         self.policy = policy
-        # Contrafactuales: {id_proyecto: {"cooling": ..., "water_right_ls": ..., "exclude": True}}
+        # Contrafactuales: {id_proyecto: {"cooling": ..., "water_right_ls": ..., "exclude": True}}.
+        # "cooling_2027" no es contrafactual: la historia real se respeta y el proyecto cambia de
+        # enfriamiento desde enero de 2027 (la calculadora de evaluación conjunta).
         self.overrides = overrides or {}
+        self._hist_ov = {pid for pid, ov in self.overrides.items() if set(ov) - {"cooling_2027"}}
         # Data center del usuario: {"it_mw", "cooling", "announce" (mes), "commune" (índice),
         # "near_homes", "hv_line", "grid_priority"}. Usa la columna de sitio N_SITES de `pop`.
         self.user_dc = user_dc
@@ -395,7 +398,10 @@ class Run:
             "c_nox": z(NC, NY), "c_ndc": z(NC, NY), "c_waitlist": z(NC, NY),
             "p_status": np.zeros((NK, NY), dtype=np.int8),
             "p_commune": np.zeros((NK, NY), dtype=np.int16),
+            "p_water_ls": z(NK, NY), "p_mw": z(NK, NY),  # promedio del año de cada proyecto
+            "n_free": z(NN, NY),  # MW sin reservar en cada nodo, a fin de año
         }
+        self._p_acc = np.zeros((2, NK))
         self.cum = defaultdict(float)
         self.delays = []  # meses entre anuncio y operación (proyectos que abren 2027+)
         self.fuel_declared = []  # combustible declarado por proyectos 2027+ (efecto 'bunching')
@@ -409,7 +415,7 @@ class Run:
         for i, p in enumerate(C.PROJECTS):
             a = self.announce[i]
             rs = p.real_status
-            if p.id in self.overrides:  # contrafactual: no se fuerza su historia
+            if p.id in self._hist_ov:  # contrafactual: no se fuerza su historia
                 continue
             if p.pre_existing:
                 continue
@@ -444,7 +450,7 @@ class Run:
                                "force_grid": True},
         }
         for pid, spec in scripts.items():
-            if pid not in self.overrides:
+            if pid not in self._hist_ov:
                 f[C.PROJECT_IDX[pid]] = spec
         for i, spec in f.items():
             for kind, t, arg in spec.get("script", []):
@@ -486,11 +492,26 @@ class Run:
                 design = max(min_feasible, thr * (0.5 + 0.49 * self.u[i, 1]))
             self.fuel[i] = design
         if self.cool[i] != AIR and self.water_plan[i] == 0:
-            # Caudal de diseño ~ 3,4 veces el promedio (Quilicura: 50 L/s de derecho, 14,5 usados)
-            avg = self.it[i] * 0.9 * 1.2 * 1000 * v["wue_evap"] / 3600
-            self.water_plan[i] = avg / 0.29 * (1.0 if self.cool[i] == EVAP else 0.4)
+            self.water_plan[i] = self._design_water(i)
         if self.cool[i] == AIR:
             self.water_plan[i] = 0.0
+
+    def _design_water(self, i) -> float:
+        """Caudal de diseño ~ 3,4 veces el promedio (Quilicura: 50 L/s de derecho, 14,5 usados)."""
+        avg = self.it[i] * 0.9 * 1.2 * 1000 * self.v["wue_evap"] / 3600
+        return avg / 0.29 * (1.0 if self.cool[i] == EVAP else 0.4)
+
+    def _set_cooling(self, i, cool):
+        """Cambia el enfriamiento de un proyecto (desde 2027): agua planificada y pedido de red."""
+        if self.status[i] == ST_CANCEL or self.cool[i] == cool:
+            return
+        self.cool[i] = cool
+        self.water_plan[i] = 0.0 if cool == AIR else self._design_water(i)
+        if self.grid[i] in (1, 2):  # la solicitud (o la reserva) cambia con el PUE
+            new = self._req(i)
+            if self.grid[i] == 2:
+                self.headroom[COMMUNE_NODE[self.commune[i]]] -= new - self.req[i]
+            self.req[i] = new
 
     def _route(self, i, t) -> str:
         if t >= C.POLICY_START and self.policy.cumulative and self._rm(i):
@@ -674,7 +695,9 @@ class Run:
         self.version[i] += 1
         self._release_grid(i, t)
         fz = self._forced.get(i, {})
-        if "script" in fz:
+        # mientras dura la historia documentada, el guion decide qué sigue; después de su último
+        # evento, una anulación sigue la regla de todos (rediseñar con aire o desistir)
+        if "script" in fz and t <= max(ts for _k, ts, _a in fz["script"]):
             self.status[i] = ST_PERMIT
             return
         if self.u[i, 5] < 0.7:  # rediseña con enfriamiento por aire y vuelve a tramitar
@@ -767,6 +790,9 @@ class Run:
     # ------------------------------------------------------------------ política acumulativa
     def _policy_switch(self, t):
         pol = self.policy
+        for pid, ov in self.overrides.items():  # la calculadora: agua o aire desde 2027
+            if "cooling_2027" in ov:
+                self._set_cooling(C.PROJECT_IDX[pid], COOL_CODE[ov["cooling_2027"]])
         if pol.transparency:
             self.transparency_on = True
             self.trust[COMMUNE_RM] -= self.v["transparency_trust"]
@@ -890,6 +916,8 @@ class Run:
             wl_c = np.bincount(com, weights=wls, minlength=NC)
             y_acc["mwh"] += mw_c * 730
             y_acc["water_m3"] += wl_c * 730 * 3.6
+            self._p_acc[0] += wls[:NK]
+            self._p_acc[1] += fac[:NK]
             rm_mw = float(mw_c[COMMUNE_RM].sum())
             y_flat["peak_rm"] = max(y_flat["peak_rm"], rm_mw)
             rm_ls = float(wl_c[COMMUNE_RM].sum())
@@ -1118,6 +1146,10 @@ class Run:
         rep[(self.grid[:NK] == 1) & (rep == ST_PERMIT)] = ST_WAIT
         r["p_status"][:, yi] = rep
         r["p_commune"][:, yi] = self.commune[:NK]
+        r["p_water_ls"][:, yi] = self._p_acc[0] / 12
+        r["p_mw"][:, yi] = self._p_acc[1] / 12
+        self._p_acc[:] = 0
+        r["n_free"][:, yi] = self.headroom
 
 
 def simulate(policy: Policy = STATUS_QUO, seed: int = 0, mode: str = "anchored",

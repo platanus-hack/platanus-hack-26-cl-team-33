@@ -34,13 +34,19 @@ COMMUNE_KEYS = ["c_it", "c_demand", "c_share", "c_water_ls", "c_conflict", "c_h5
 AQ_KEYS = ["aq_dc_drawdown", "aq_level"]
 
 
+PROJECT_KEYS = ["p_status", "p_commune", "p_water_ls", "p_mw"]
+NODE_KEYS = ["n_free"]
+# cifras por comuna que se guardan futuro a futuro (2030 y 2035) para comparar en pares
+PAIRED_COMMUNE_KEYS = ["c_water_ls", "c_demand", "c_waitlist", "c_conflict"]
+
+
 def _run_chunk(args):
-    policy_dict, seeds, mode = args
+    policy_dict, seeds, mode, overrides = args
     pol = Policy(**policy_dict)
-    out = {k: [] for k in SERIES_KEYS + COMMUNE_KEYS + AQ_KEYS + ["p_status", "p_commune"]}
+    out = {k: [] for k in SERIES_KEYS + COMMUNE_KEYS + AQ_KEYS + PROJECT_KEYS + NODE_KEYS}
     extra = {"delays": [], "fuel": [], "routes": {}}
     for s in seeds:
-        r = Run(pol, seed=s, mode=mode).run()
+        r = Run(pol, seed=s, mode=mode, overrides=overrides).run()
         for k in out:
             out[k].append(r.rec[k])
         extra["delays"].append(r.delays)
@@ -51,13 +57,13 @@ def _run_chunk(args):
 
 
 def run_raw(policy: Policy, n: int = 200, mode: str = "anchored", seed0: int = 0,
-            workers: int | None = None):
+            workers: int | None = None, overrides: dict | None = None):
     """Devuelve los registros apilados de n réplicas: dict clave -> array (n, ...)."""
     seeds = list(range(seed0, seed0 + n))
     # DCSIM_WORKERS limita los procesos en servidores chicos (Render free: 512 MB)
     workers = workers or int(os.environ.get("DCSIM_WORKERS", "0")) or min(8, os.cpu_count() or 2)
     chunks = [seeds[i::workers] for i in range(workers) if seeds[i::workers]]
-    tasks = [(policy.to_dict(), ch, mode) for ch in chunks]
+    tasks = [(policy.to_dict(), ch, mode, overrides) for ch in chunks]
     if workers == 1 or n <= 8:
         results = [_run_chunk(t) for t in tasks]
     else:
@@ -83,11 +89,11 @@ def _r(x, nd=3):
     return np.round(np.asarray(x, dtype=float), nd).tolist()
 
 
-def summarize(raw, extra, policy: Policy, mode: str) -> dict:
+def summarize(raw, extra, policy: Policy, mode: str, overrides: dict | None = None) -> dict:
     n = raw["it_chile"].shape[0]
     out = {
         "meta": {"n": n, "mode": mode, "policy": policy.to_dict(), "years": C.YEARS,
-                 "version": MODEL_VERSION},
+                 "version": MODEL_VERSION, **({"overrides": overrides} if overrides else {})},
         "series": {k: _q(raw[k]) for k in SERIES_KEYS},
         "communes": {k: _q(raw[k]) for k in COMMUNE_KEYS},
         "aquifers": {k: _q(raw[k]) for k in AQ_KEYS},
@@ -109,7 +115,9 @@ def summarize(raw, extra, policy: Policy, mode: str) -> dict:
         dest[i, y] = int(np.bincount(com[away[:, i, y], i, y]).argmax())
     out["projects"] = {"status_prob": _r(probs, 2), "commune_mode": mode_com.tolist(),
                        "p_relocated": _r(moved, 2), "p_moved": _r(p_moved, 2),
-                       "dest_mode": dest.tolist()}
+                       "dest_mode": dest.tolist(),
+                       "water_ls": _q(raw["p_water_ls"]), "mw": _q(raw["p_mw"])}
+    out["nodes"] = {k: _q(raw[k]) for k in NODE_KEYS}
     d = np.array(extra["delays"]) if extra["delays"] else np.array([0.0])
     f = np.array(extra["fuel"]) if extra["fuel"] else np.array([0.0])
     hist, edges = np.histogram(f, bins=[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,
@@ -128,12 +136,16 @@ def summarize(raw, extra, policy: Policy, mode: str) -> dict:
               "nox_t", "jobs_oper", "peak_rm", "demand_rm", "mw_outside_rm"]:
         paired[k] = _r(raw[k][:, [C.YEARS.index(2030), C.YEARS.index(2035)]])
     out["paired"] = paired
+    yy = [C.YEARS.index(2030), C.YEARS.index(2035)]
+    out["paired_communes"] = {k: _r(raw[k][:, :, yy]) for k in PAIRED_COMMUNE_KEYS}
     return out
 
 
-def _cache_key(policy: Policy, n: int, mode: str) -> str:
-    h = hashlib.sha1(json.dumps([policy.to_dict(), n, mode, MODEL_VERSION, _code_hash()],
-                                sort_keys=True).encode()).hexdigest()[:16]
+def _cache_key(policy: Policy, n: int, mode: str, overrides: dict | None = None) -> str:
+    key = [policy.to_dict(), n, mode, MODEL_VERSION, _code_hash()]
+    if overrides:
+        key.append(overrides)
+    h = hashlib.sha1(json.dumps(key, sort_keys=True).encode()).hexdigest()[:16]
     return f"{mode}_{n}_{h}"
 
 
@@ -152,13 +164,13 @@ def _code_hash() -> str:
 
 
 def run_ensemble(policy: Policy, n: int = 200, mode: str = "anchored", use_cache: bool = True,
-                 workers: int | None = None) -> dict:
-    key = _cache_key(policy, n, mode)
+                 workers: int | None = None, overrides: dict | None = None) -> dict:
+    key = _cache_key(policy, n, mode, overrides)
     path = CACHE_DIR / f"{key}.json"
     if use_cache and path.exists():
         return json.loads(path.read_text())
-    raw, extra = run_raw(policy, n, mode, workers=workers)
-    res = summarize(raw, extra, policy, mode)
+    raw, extra = run_raw(policy, n, mode, workers=workers, overrides=overrides)
+    res = summarize(raw, extra, policy, mode, overrides)
     if use_cache:
         CACHE_DIR.mkdir(exist_ok=True)
         path.write_text(json.dumps(res))
