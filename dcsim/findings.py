@@ -144,9 +144,10 @@ def build(raw: dict) -> list[dict]:
         "body": (f"El modelo vuelve a correr 2012–2026 cambiando solo esa decisión. Con agua "
                  f"(169 L/s de un acuífero en zona de prohibición) la probabilidad de juicio es "
                  f"{_f(100 * share(A(real, 'cer_lit') > 0))}%; con aire, "
-                 f"{_f(100 * share(A(air, 'cer_lit') > 0))}%. En la realidad hubo juicio, el "
-                 "tribunal anuló parcialmente el permiso en 2024 y Google rediseñó con aire en "
-                 "2026."),
+                 f"{_f(100 * share(A(air, 'cer_lit') > 0))}%. En la realidad hubo juicio: Google "
+                 "pidió pasar a aire en 2022, el tribunal anuló parcialmente el permiso en 2024, "
+                 "Google renunció a él y anunció un rediseño por aire (sep-2024), y el SEA lo "
+                 "dejó sin evaluación ambiental en oct-2026."),
         "cost": "La elección de enfriamiento pesa más que el tamaño del proyecto. Supuesto clave: "
                 "cuánto pesa en la opinión de los vecinos el agua que ven usar; si pesa la mitad, "
                 "la diferencia casi desaparece.",
