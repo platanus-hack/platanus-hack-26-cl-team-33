@@ -32,12 +32,13 @@ primera carga tarda 20 a 30 s; un cambio en la simulación por comuna o "Tu regl
 
 ## Qué puedes hacer en la página
 
-- **Sumar todos los data centers de una comuna** (Quilicura por defecto): los que operan, los
-  que se construyen, los que están en trámite y los que esperan red, con lo que cada uno declaró
-  al SEA y su fuente. Para los que aún no operan, elegir agua o aire desde 2027 y ver el agua, la
-  electricidad, la red libre del nodo, los MW esperando conexión y los vecinos movilizados en 2030
-  y 2035, comparados con lo declarado en los mismos 60 futuros. Cada proyecto muestra además su
-  trade-off a plena carga: cuánta agua usa enfriando con agua y cuántos MW más pide con aire.
+- **Responder una pregunta: si se construye todo lo aprobado en Quilicura, ¿alcanza el agua?**
+  Un interruptor cambia, desde 2027, el enfriamiento de los 4 proyectos que aún no operan (aire,
+  como lo declararon, o agua). La página muestra tres cifras de 2035 (agua, electricidad y vecinos
+  movilizados), en cuántos de los mismos futuros cambian, y cuántos de esos proyectos no llegan a
+  operar. Los dos escenarios vienen precalculados, así que responde al instante. Un desplegable
+  muestra los 11 proyectos y lo que cada uno declaró al SEA, con su fuente. La API
+  (`POST /api/calc`) permite lo mismo para cualquier proyecto que aún no opera en cualquier comuna.
 - **Elegir una regla** (como hoy, permisos rápidos, solo aire, evaluación conjunta, ir al norte
   o las tres que más ayudan) y ver el mapa y seis cifras de 2035.
 - **Armar tu propia regla** con 8 palancas: umbral de diésel, plazo de permisos, incentivo al

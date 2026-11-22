@@ -43,44 +43,35 @@
       </div>
     </header>
 
-    <!-- Calculadora de evaluación conjunta: todos los data centers de una comuna, sumados -->
+    <!-- La pregunta de la portada: Quilicura con todo lo aprobado, enfriando con aire o con agua -->
     <section class="calc" id="calculadora" aria-labelledby="calc-title">
       <div class="sim-head" data-rise>
-        <h2 id="calc-title" class="head"><span class="soft">Con todo lo aprobado y en trámite,</span> ¿alcanza el agua y la red?</h2>
-        <p class="calc-lead">¿Qué pasa si se construye todo lo aprobado y en trámite en una comuna? Cada data center se evalúa solo; aquí los simulamos juntos, mes a mes hasta 2035, en <span data-calc-n>60</span> futuros: compiten por la misma red, esperan en la fila del CEN, generan oposición y pueden terminar en tribunales. Así el SEA, el municipio y los vecinos discuten las mismas cifras en la evaluación ambiental. A diferencia de <a href="#simular">«Tu regla»</a>, que cambia las reglas para todo Santiago, aquí cambias proyectos concretos de una comuna.</p>
+        <h2 id="calc-title" class="head"><span class="soft">Si se construye todo lo aprobado en Quilicura,</span> ¿alcanza el agua?</h2>
+        <p class="calc-lead">Cada data center se evalúa solo. Aquí simulamos juntos los <span data-calc-total>11</span> de Quilicura, mes a mes hasta 2035, en <span data-calc-n>60</span> futuros: compiten por la misma red, esperan en la fila del CEN, generan oposición y pueden terminar en tribunales.</p>
       </div>
-      <ul class="calc-roles" data-rise>
-        <li><b>SEA y servicios</b><span>¿Alcanzan el agua y la red con todo lo ya aprobado?</span></li>
-        <li><b>Municipio y vecinos</b><span>¿Cuánto es todo junto, no solo este proyecto?</span></li>
-        <li><b>Empresa</b><span>¿Enfriar con agua o con aire?</span></li>
-      </ul>
-      <div class="calc-body">
-        <form class="custom calc-form" id="calcForm" data-rise>
-          <label>Comuna
-            <select id="calcCommune" name="commune" disabled><option>Cargando…</option></select></label>
-          <div class="calc-projects" id="calcProjects"><p class="custom-note">Cargando los proyectos…</p></div>
-          <button class="btn" type="submit" id="calcRun" disabled>Simular</button>
-          <p class="custom-note" id="calcNote" aria-live="polite">Elige agua o aire para los que aún no operan y presiona Simular.</p>
-        </form>
-        <div class="numbers calc-results" id="calcResults" data-rise>
-          <div class="calc-top">
-            <p class="rule-summary" id="calcSummary" aria-live="polite">Cargando…</p>
-            <div class="seg" role="group" aria-label="Año de las cifras">
-              <button type="button" data-cyear="2030" aria-pressed="false">2030</button>
-              <button type="button" data-cyear="2035" aria-pressed="true">2035</button>
-            </div>
+      <div class="calc-body" data-rise>
+        <div class="calc-switch">
+          <p class="calc-ask">Los <span data-calc-k>4</span> proyectos que todavía no operan enfrían con:</p>
+          <div class="seg calc-seg" role="group" aria-label="Enfriamiento desde 2027 de los proyectos que todavía no operan">
+            <button type="button" data-cool="aire" aria-pressed="true">Aire</button>
+            <button type="button" data-cool="evaporativo" aria-pressed="false">Agua</button>
           </div>
+          <p class="custom-note" id="calcNote" aria-live="polite">Cargando la simulación…</p>
+          <p class="calc-sim" id="calcSim" aria-live="polite"></p>
+          <p class="sim-foot">Valores típicos de <span data-calc-n>60</span> futuros simulados mes a mes. El cambio rige desde 2027; la historia hasta noviembre de 2026 es la real.</p>
+        </div>
+        <div class="numbers calc-results" aria-live="polite">
           <div class="bands" id="calcBands">
-            <div class="band" data-ck="water"><div><b>Agua que usan sus data centers</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
-            <div class="band" data-ck="power"><div><b>Electricidad de sus data centers</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
-            <div class="band" data-ck="grid"><div><b>Red eléctrica libre en su nodo</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
-            <div class="band" data-ck="wait"><div><b>Esperando conexión a la red</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
-            <div class="band" data-ck="conflict"><div><b>Vecinos movilizados en contra</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-ck="water"><div><b>Agua de sus data centers en 2035</b><span class="note"></span><span class="delta"></span></div><span class="val">…</span></div>
+            <div class="band" data-ck="power"><div><b>Electricidad de sus data centers</b><span class="note"></span><span class="delta"></span></div><span class="val">…</span></div>
+            <div class="band" data-ck="conflict"><div><b>Vecinos movilizados en contra</b><span class="note"></span><span class="delta"></span></div><span class="val">…</span></div>
           </div>
-          <div class="calc-changes" id="calcChanges" hidden></div>
-          <p class="sim-foot" id="calcFoot">Son resultados de simular <span data-calc-n>60</span> futuros mes a mes (permisos, la fila de conexión del CEN, tribunales y vecinos), no una fórmula: con aire baja el agua, pero la red se llena antes. El cambio de enfriamiento rige desde 2027; la historia documentada hasta noviembre de 2026 queda como fue. Lo declarado viene del SEA cuando existe; si no, son supuestos marcados como tales. Cada cifra es el valor típico (mediana) y el rango donde cae el 90% de los futuros.</p>
         </div>
       </div>
+      <details class="calc-detail" data-rise>
+        <summary>Ver los <span data-calc-total>11</span> proyectos y lo que declararon al SEA</summary>
+        <div id="calcProjects"></div>
+      </details>
     </section>
 
     <!-- El simulador: reglas, mapa y cifras en un solo lugar -->

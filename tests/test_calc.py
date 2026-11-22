@@ -84,3 +84,11 @@ def test_calc_endpoint(small_n):
             return client.post("/api/calc", json={"cooling": cooling}).status_code
         assert status({"google_quilicura_1": "aire"}) == 400  # ya opera: no se cambia
         assert status({"campo_lampa": "hielo"}) == 422
+
+
+def test_front_page_question_is_precomputed():
+    """Quilicura con agua responde al instante en el sitio (60 futuros) y en local (100)."""
+    ov = server.calc_demo_overrides()
+    assert sorted(ov) == ["ascenty_3", "ascenty_data_hall", "cirion_quilicura_2", "microsoft_scl03"]
+    for n in (60, 100):
+        assert (CACHE_DIR / f"{_cache_key(STATUS_QUO, n, 'anchored', ov)}.json").exists(), n

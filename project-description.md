@@ -8,7 +8,7 @@ Cada data center se evalúa por separado y nadie suma el efecto de todos. Aterri
 
 ## Qué puedes hacer
 
-- **Sumar todos los data centers de una comuna** (Quilicura por defecto) y ver su agua, su electricidad, la red libre del nodo y los vecinos movilizados en 2030 y 2035. Para los que aún no operan, elegir agua o aire desde 2027 y compararlo con lo declarado en los mismos 60 futuros. Cada proyecto muestra lo que declaró al SEA, con enlace, y cuánta agua usaría con agua y cuántos MW más pediría con aire.
+- **Responder una pregunta:** si se construye todo lo aprobado en Quilicura, ¿alcanza el agua? Con un interruptor, los 4 proyectos que aún no operan enfrían con aire (como lo declararon) o con agua desde 2027, y ves al instante el agua, la electricidad y los vecinos movilizados en 2035, y cuántos de esos proyectos no llegan a operar. Un desplegable muestra lo que cada proyecto declaró al SEA, con su fuente.
 - **Elegir una regla** (seguir como hoy, permisos más rápidos, solo enfriamiento por aire, evaluar por zona con los vecinos, irse al norte o las tres que más ayudan) y ver cómo cambian el mapa y las cifras de 2035.
 - **Armar tu propia regla** palanca por palanca y compararla con seguir como hoy en los mismos 60 futuros (hasta un minuto en el sitio).
 - **Mover el año** de 2012 a 2035 y ver cómo se llena cada comuna, o cuánto cambia respecto de seguir como hoy.

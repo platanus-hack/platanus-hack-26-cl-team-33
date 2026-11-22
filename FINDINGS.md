@@ -219,15 +219,17 @@ Límites de este análisis:
 
 Hoy cada data center se evalúa solo. Esta parte hace la pregunta que esa evaluación no hace,
 como un "qué pasaría si" simulado y no como una suma de planilla: con todo lo que opera, se construye, está en trámite o espera red en una comuna,
-¿alcanzan el agua y la red? Suma todos los data centers de la comuna, con lo que cada uno
-declaró al SEA, y deja elegir agua o aire desde 2027 para los que aún no operan. Está pensada
+¿alcanzan el agua y la red? La página la hace para Quilicura, con un solo interruptor: los
+proyectos que aún no operan enfrían con aire, como lo declararon, o con agua desde 2027. Los dos
+escenarios están precalculados (`python -m dcsim.precompute`). La API (`POST /api/calc`) hace
+lo mismo para cualquier comuna y cualquier proyecto que aún no opera. Está pensada
 para la evaluación ambiental, que es donde hoy se discute cada proyecto:
 
 - **SEA y servicios:** ¿alcanzan el agua y la red con todo lo ya aprobado?
 - **Municipio y vecinos:** ¿cuánto es todo junto, no solo este proyecto?
 - **Empresa:** ¿enfriar con agua o con aire?
 
-Cada cálculo corre 60 futuros en el sitio (100 en local), los mismos de "Tu regla", en modo
+Cada escenario corre 60 futuros en el sitio (100 en local), los mismos de "Tu regla", en modo
 anclado: la historia real hasta nov-2026 y, desde 2027, el enfriamiento elegido. Se compara
 futuro por futuro con lo declarado. Las cifras incluyen los proyectos nuevos que llegan a la
 comuna en cada futuro, no solo los conocidos. El código está en `POST /api/calc`

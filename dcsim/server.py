@@ -139,7 +139,8 @@ def meta() -> dict:
         "metrics": {k: {"label": v[0], "unit": v[1], "good_up": v[2]} for k, v in METRICS.items()},
         "observed": C.OBSERVED,
         "calc": {"projects": [p["id"] for p in calc_projects()], "n": N_CUSTOM,
-                 "max_changes": CALC_MAX_TOGGLES},
+                 "max_changes": CALC_MAX_TOGGLES, "demo_commune": CALC_DEMO_COMMUNE,
+                 "demo_projects": sorted(calc_demo_overrides())},
     }
 
 
@@ -242,6 +243,16 @@ def calc_projects() -> list[dict]:
             for p in C.PROJECTS if p.real_status != "operando" and not p.pre_existing]
 
 
+# La pregunta de la portada: Quilicura, y sus proyectos que aún no operan enfriando con agua desde
+# 2027. Se precalcula (python -m dcsim.precompute) para que la página responda al instante.
+CALC_DEMO_COMMUNE = "quilicura"
+
+
+def calc_demo_overrides() -> dict:
+    return {p["id"]: {"cooling_2027": "evaporativo"} for p in calc_projects()
+            if p["commune"] == CALC_DEMO_COMMUNE and p["cooling"] != "evaporativo"}
+
+
 class CalcRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     cooling: dict[str, Literal["aire", "evaporativo"]] = Field(default_factory=dict)
@@ -291,7 +302,8 @@ def calc(req: CalcRequest) -> dict:
     key = (json.dumps(ov, sort_keys=True), n)
     with _custom_lock:  # una simulación a la vez: comparte la CPU con «Tu regla»
         if key not in _calc:
-            _calc[key] = run_ensemble(STATUS_QUO, n=n, use_cache=False, overrides=ov)
+            demo = ov == calc_demo_overrides()  # la pregunta de la portada viene precalculada
+            _calc[key] = run_ensemble(STATUS_QUO, n=n, use_cache=demo, overrides=ov)
             while len(_calc) > _CUSTOM_MAX:
                 _calc.popitem(last=False)
         _calc.move_to_end(key)

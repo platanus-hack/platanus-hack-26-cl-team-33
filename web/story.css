@@ -488,43 +488,29 @@ ul.where li { margin-bottom: 6px; }
 .hero-alt:hover { color: var(--accent); }
 .calc { padding: 180px var(--m) 20px; }
 .calc-lead { max-width: 62ch; margin: 0; color: var(--muted); }
-.calc-lead a { color: var(--ink); }
-.calc-roles { list-style: none; margin: 48px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.calc-roles li { background: var(--surface); padding: 14px 18px; display: flex; flex-direction: column; gap: 2px; }
-.calc-roles b { font-weight: 600; line-height: 1.25; }
-.calc-roles span { font-size: var(--step-small); color: var(--muted); line-height: 1.35; }
-.calc-body { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 24px; margin-top: 24px; align-items: start; }
-.calc-form { margin: 0; min-width: 0; }
-.calc-form select { max-width: 360px; }
-.calc-form .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-.calc-projects { background: var(--surface); padding: 6px 12px 12px; min-width: 0; }
+.calc-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 600px); gap: 48px; margin-top: 48px; align-items: start; }
+.calc-ask { margin: 0 0 14px; font-size: var(--step-lead); font-weight: 600; line-height: 1.25; max-width: 22ch; }
+.calc-seg button { min-height: 48px; min-width: 96px; font-size: var(--step-body); }
+.calc-results .band .delta { display: block; margin-top: 4px; font-size: var(--step-small); color: var(--muted); }
+.calc-results .band .delta b { color: var(--ink); font-weight: 600; }
+.calc-sim { margin: 32px 0 0; max-width: 40ch; font-size: var(--step-lead); line-height: 1.35; min-height: 3.6em; }
+.calc-results .band .val { font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.4rem); }
+.calc-sim b { font-weight: 600; }
+.calc-detail { margin-top: 48px; background: var(--surface); padding: 0 16px; }
+.calc-detail summary { cursor: pointer; padding: 14px 0; font-weight: 600; }
+.calc-detail[open] { padding-bottom: 12px; }
 .calc-table td:first-child { min-width: 10em; }
-.calc-table td:nth-child(2) { white-space: nowrap; }
 .calc-table td:first-child b { font-weight: 600; }
 .calc-table .range { display: block; line-height: 1.35; }
-.calc-table .seg button { min-height: 32px; }
-.calc-table tbody tr:nth-child(odd) .seg button:not([aria-pressed="true"]) { background: var(--surface); }
-.calc-table .seg button:not([aria-pressed="true"]):hover { background: #d5d9e0; }
 .calc-table a { color: var(--accent); }
 .calc-anon td { color: var(--muted); }
-.calc-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px 16px; margin-bottom: 18px; }
-.calc-top .rule-summary { margin: 0; flex: 1 1 240px; }
-.calc-results .bands, .calc-changes { transition: opacity 200ms; }
-.calc-results.stale .bands, .calc-results.stale .calc-changes { opacity: 0.45; }
-.calc-changes { margin-top: 18px; font-size: var(--step-small); line-height: 1.45; }
-.calc-changes p { margin: 0 0 6px; font-weight: 600; }
-.calc-changes ul { margin: 0; padding-left: 18px; }
-.calc-changes li + li { margin-top: 8px; }
-.calc-changes b { font-weight: 600; }
 @media (max-width: 1200px) {
   .calc-body { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
   .calc { padding: 120px var(--m) 0; }
-  .calc-roles { grid-template-columns: 1fr; margin-top: 32px; }
-  .calc-form .btn { width: 100%; }
-  .calc-form select { max-width: none; }
-  .calc-projects { padding: 4px 4px 8px; }
+  .calc-seg { display: flex; }
+  .calc-seg button { flex: 1; }
   /* una fila por proyecto, apilada como la tabla de la prueba */
   .calc-table thead { display: none; }
   .calc-table, .calc-table tbody, .calc-table tr, table.calc-table td { display: block; }
@@ -532,5 +518,4 @@ ul.where li { margin-bottom: 6px; }
   table.calc-table td { padding: 2px 6px; }
   table.calc-table td:nth-child(2), table.calc-table td:nth-child(3) { display: inline-block; margin-right: 12px; vertical-align: top; }
   .calc-table td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); }
-  .calc-table td[data-label] .seg { vertical-align: middle; margin: 2px 0; }
 }
