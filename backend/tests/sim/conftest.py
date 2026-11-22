@@ -1,7 +1,7 @@
 import pytest
+from sim_helpers import make_config
 
 from bedflow.contracts import SimulationConfig
-from sim_helpers import make_config
 
 
 @pytest.fixture

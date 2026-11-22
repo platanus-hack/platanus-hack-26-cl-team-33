@@ -1,9 +1,9 @@
 """Evaluation window, denominator and 720-minute follow-up rules."""
 import numpy as np
 import pytest
+from sim_helpers import make_config, traced_run
 
 from bedflow.sim.metrics import compute_metrics
-from sim_helpers import make_config, traced_run
 
 STARVED = make_config(ward_beds=4, initial_ward_occupied=4, mean_inpatient_los_h=120.0,
                       admission_probability=0.3)

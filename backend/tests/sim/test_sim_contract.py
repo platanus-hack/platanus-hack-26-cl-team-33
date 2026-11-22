@@ -2,10 +2,10 @@
 from pathlib import Path
 
 import pytest
+from sim_helpers import SCENARIOS, make_config
 
 from bedflow.contracts import SimulateRequest, SimulationResult
 from bedflow.sim import simulate
-from sim_helpers import SCENARIOS, make_config
 
 FIXTURES = next(
     (parent / "fixtures" for parent in Path(__file__).resolve().parents

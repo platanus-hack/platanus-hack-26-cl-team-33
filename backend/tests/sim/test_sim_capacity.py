@@ -1,6 +1,7 @@
 """Resource conservation, checked from the event trace and from patient records."""
-import pytest
+from itertools import pairwise
 
+import pytest
 from sim_helpers import make_config, traced_run
 
 CONFIGS = [
@@ -61,5 +62,5 @@ def test_no_bed_double_allocation():
     assert set(by_bed) <= set(range(config.ward_beds))
     for stays in by_bed.values():
         stays.sort(key=lambda s: s.start)
-        for prev, nxt in zip(stays, stays[1:]):
+        for prev, nxt in pairwise(stays):
             assert prev.ready is not None and prev.ready <= nxt.start

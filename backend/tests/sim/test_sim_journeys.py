@@ -1,9 +1,9 @@
 """Per-patient milestone ordering and the selected example journeys."""
 import pytest
+from sim_helpers import SCENARIOS, make_config, traced_run
 
 from bedflow.sim import simulate
 from bedflow.sim.journeys import milestones
-from sim_helpers import SCENARIOS, make_config, traced_run
 
 DISCHARGED = ["ED_ARRIVAL", "ED_BAY_ENTER", "PHYSICIAN_START", "PHYSICIAN_END", "ED_DISCHARGED"]
 ADMITTED = ["ED_ARRIVAL", "ED_BAY_ENTER", "PHYSICIAN_START", "PHYSICIAN_END",

@@ -1,12 +1,14 @@
 """Low vs high demand behaviour, edge configs, and a loose speed bound."""
 import time
 
-from bedflow.sim import simulate
 from sim_helpers import make_config
+
+from bedflow.sim import simulate
 
 
 def test_low_demand_admits_nearly_everyone():
-    m = simulate(make_config(arrival_rate_per_hour=0.5, ward_beds=40, initial_ward_occupied=5), 1).metrics
+    config = make_config(arrival_rate_per_hour=0.5, ward_beds=40, initial_ward_occupied=5)
+    m = simulate(config, 1).metrics
     assert m.eligible_admissions > 0
     assert m.admitted_within_12h_pct >= 95
     assert m.max_ed_boarding <= 2

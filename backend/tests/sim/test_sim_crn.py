@@ -1,9 +1,9 @@
 """Common random numbers: policy levers never change the exogenous cohort."""
 import numpy as np
 import pytest
+from sim_helpers import SCENARIOS, make_config, traced_run
 
 from bedflow.sim.cohort import generate_cohort
-from sim_helpers import SCENARIOS, make_config, traced_run
 
 FIELDS = ("arrival_min", "admit", "service_min", "los_min", "initial_residual_min")
 
@@ -45,7 +45,8 @@ def test_simulated_patients_are_stable_across_scenarios():
     cohort = generate_cohort(make_config(), 101)
     for p in base.patients:
         if p.physician_end is not None:
-            assert p.physician_end - p.physician_start == pytest.approx(cohort.service_min[p.patient_id])
+            service = cohort.service_min[p.patient_id]
+            assert p.physician_end - p.physician_start == pytest.approx(service)
 
 
 def test_more_ward_beds_keeps_initial_occupancy():

@@ -164,7 +164,9 @@ class HospitalModel:
             env.process(self._bed_cycle(stay, float(residual), None))
         c = self.cohort
         for i in range(c.n_patients):
-            rec = PatientRecord(patient_id=i, arrival=float(c.arrival_min[i]), admit=bool(c.admit[i]))
+            rec = PatientRecord(
+                patient_id=i, arrival=float(c.arrival_min[i]), admit=bool(c.admit[i])
+            )
             self.patients.append(rec)
             env.process(self._patient(rec, float(c.service_min[i]), float(c.los_min[i])))
 
