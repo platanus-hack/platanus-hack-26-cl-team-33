@@ -141,7 +141,7 @@ W_BY_COMMUNE = np.bincount(POP["commune"], weights=POP["w"], minlength=NC)
 _KLW = POP["K_local"] * POP["w"][:, None]
 K_LOCAL_DEN = _KLW.sum(axis=0)
 
-# Vista de la población que usa una corrida. Sin data center del usuario son los arreglos globales.
+# Vista de la población que usa una corrida (hogares, cercanía a cada sitio y pesos).
 BASE_VIEW = {
     "n": NAG, "n_real": NAG, "n_sites": N_SITES, "commune": POP["commune"], "w": POP["w"],
     "sens": POP["sens"], "val": POP["val"], "theta": POP["theta"], "K": POP["K"],
@@ -149,58 +149,18 @@ BASE_VIEW = {
 }
 
 
-def population_view(site: tuple[float, float], probes: dict | None = None) -> dict:
-    """Agrega un sitio (el data center del usuario) y, opcionalmente, hogares de muestra.
-
-    El sitio nuevo es la columna ``N_SITES``. Los hogares de muestra (``probes``: lat, lon,
-    commune, sens, val, theta) siguen las mismas reglas de opinión que el resto, pero pesan
-    cero: no cambian la oposición de la comuna, los litigios ni ningún total. Sirven para ver
-    con detalle qué les pasa a los vecinos de un punto.
-    """
-    slat = np.array([s[0] for s in SITE_LATLON] + [site[0]])
-    slon = np.array([s[1] for s in SITE_LATLON] + [site[1]])
-    d_new = np.maximum(_km(POP["lat"], POP["lon"], site[0], site[1]), 0.05)
-    K = np.hstack([POP["K"], np.exp(-d_new / 0.7)[:, None]])
-    K_local = np.hstack([POP["K_local"], np.exp(-d_new / 1.5)[:, None]])
-    near = np.hstack([POP["near500"], (d_new < 0.5)[:, None]])
-    com, w = POP["commune"], POP["w"]
-    sens, val, theta = POP["sens"], POP["val"], POP["theta"]
-    if probes is not None and len(probes["lat"]):
-        plat, plon = np.asarray(probes["lat"]), np.asarray(probes["lon"])
-        dp = np.maximum(_km(plat[:, None], plon[:, None], slat[None, :], slon[None, :]), 0.05)
-        K = np.vstack([K, np.exp(-dp / 0.7)])
-        K_local = np.vstack([K_local, np.exp(-dp / 1.5)])
-        near = np.vstack([near, dp < 0.5])
-        com = np.concatenate([com, np.asarray(probes["commune"], dtype=com.dtype)])
-        w = np.concatenate([w, np.zeros(len(plat))])
-        sens = np.concatenate([sens, probes["sens"]])
-        val = np.concatenate([val, probes["val"]])
-        theta = np.concatenate([theta, probes["theta"]])
-    klw = K_local * w[:, None]
-    return {"n": len(w), "n_real": NAG, "n_sites": N_SITES + 1, "commune": com, "w": w,
-            "sens": sens, "val": val, "theta": theta, "K": K, "KLW": klw,
-            "kl_den": np.maximum(klw.sum(axis=0), 1e-12), "near500": near}
-
-
-# Cuadros que se guardan para seguir a un data center del usuario: cada 3 meses desde oct-2026
-FRAME_T = np.arange(C.POLICY_START - 3, C.N_MONTHS, 3)
-
-
 class Run:
     """Una réplica de la simulación."""
 
     def __init__(self, policy: Policy = STATUS_QUO, seed: int = 0, mode: str = "anchored",
-                 params: dict | None = None, overrides: dict | None = None,
-                 user_dc: dict | None = None, pop: dict | None = None):
+                 params: dict | None = None, overrides: dict | None = None):
         self.policy = policy
-        # Contrafactuales: {id_proyecto: {"cooling": ..., "water_right_ls": ..., "exclude": True}}
+        # Contrafactuales: {id_proyecto: {"cooling": ..., "water_right_ls": ..., "exclude": True}}.
+        # "cooling_2027" no es contrafactual: la historia real se respeta y el proyecto cambia de
+        # enfriamiento desde enero de 2027 (la calculadora de evaluación conjunta).
         self.overrides = overrides or {}
-        # Data center del usuario: {"it_mw", "cooling", "announce" (mes), "commune" (índice),
-        # "near_homes", "hv_line", "grid_priority"}. Usa la columna de sitio N_SITES de `pop`.
-        self.user_dc = user_dc
-        self.P = pop if pop is not None else BASE_VIEW
-        if user_dc is not None and self.P["n_sites"] <= N_SITES:
-            raise ValueError("Un data center del usuario necesita population_view(sitio)")
+        self._hist_ov = {pid for pid, ov in self.overrides.items() if set(ov) - {"cooling_2027"}}
+        self.P = BASE_VIEW
         self.mode = mode
         self.seed = seed
         v = params if params is not None else sample_values(np.random.default_rng([seed, 1]))
@@ -234,15 +194,7 @@ class Run:
         draws = {k: np.concatenate([d, cand_draws[k][kept]])
                  for k, d in _project_draws(rng_p, NK).items()}
         self.n_synth = len(synth)
-        nb = NK + self.n_synth  # proyectos que sortean del flujo común de números aleatorios
-        has_u = self.user_dc is not None
-        N = self.N = nb + int(has_u)
-        self.user_i = nb if has_u else -1
-        # El data center del usuario sortea de su propio flujo: así los demás proyectos ven
-        # exactamente los mismos números con y sin él, y la diferencia es efecto del data center.
-        rng_u = np.random.default_rng([self.seed, 5])
-        user_draws = _project_draws(rng_u, N - nb)
-        draws = {k: np.concatenate([d, user_draws[k]]) for k, d in draws.items()}
+        N = self.N = NK + self.n_synth
         self.it = np.zeros(N)
         self.cool = np.zeros(N, dtype=int)
         self.commune = np.zeros(N, dtype=int)
@@ -258,7 +210,6 @@ class Run:
         self.online = np.full(N, 10**6)
         self.build_start = np.full(N, 10**6)
         self.lfmax = np.clip(v["lf_max"] + 0.08 * draws["lf"], 0.45, 0.97)
-        self.fixed_site = np.zeros(N, dtype=bool)  # no se muda de comuna aunque espere red
         self.known = np.zeros(N, dtype=bool)
         self.known[:NK] = True
         for i, p in enumerate(C.PROJECTS):
@@ -293,18 +244,6 @@ class Run:
             self.capex[i] = mw * v["capex_musd_per_mw"]
             self.fuel[i] = -1.0
             self.announce[i] = self.permit_start[i] = month
-        if has_u:
-            d, i = self.user_dc, nb
-            self.it[i] = d["it_mw"]
-            self.cool[i] = COOL_CODE[d["cooling"]]
-            self.commune[i] = d["commune"]
-            self.site[i] = N_SITES  # su propia columna en la vista de población
-            self.capex[i] = d["it_mw"] * v["capex_musd_per_mw"]
-            self.fuel[i] = -1.0  # el desarrollador lo decide al diseñar (con el umbral vigente)
-            self.hv[i] = bool(d.get("hv_line", False))
-            self.near_homes[i] = bool(d.get("near_homes", False))
-            self.announce[i] = self.permit_start[i] = int(d["announce"])
-            self.fixed_site[i] = True
         # Números aleatorios por proyecto (números aleatorios comunes entre políticas)
         self.z = draws["z"]  # duraciones
         self.u = draws["u"]  # decisiones discretas
@@ -333,8 +272,6 @@ class Run:
         self._forced = {}
         if self.mode == "anchored":
             self._anchor_history()
-        if has_u and self.user_dc.get("grid_priority"):
-            self._forced[self.user_i] = {"force_grid": True}  # se salta la fila del CEN
 
     def _init_environment(self, rng_e):
         v = self.v
@@ -395,12 +332,14 @@ class Run:
             "c_nox": z(NC, NY), "c_ndc": z(NC, NY), "c_waitlist": z(NC, NY),
             "p_status": np.zeros((NK, NY), dtype=np.int8),
             "p_commune": np.zeros((NK, NY), dtype=np.int16),
+            "p_water_ls": z(NK, NY), "p_mw": z(NK, NY),  # promedio del año de cada proyecto
+            "n_free": z(NN, NY),  # MW sin reservar en cada nodo, a fin de año
         }
+        self._p_acc = np.zeros((2, NK))
         self.cum = defaultdict(float)
         self.delays = []  # meses entre anuncio y operación (proyectos que abren 2027+)
         self.fuel_declared = []  # combustible declarado por proyectos 2027+ (efecto 'bunching')
         self.routes_2027 = defaultdict(int)
-        self.frames = defaultdict(list)  # seguimiento trimestral (solo con data center del usuario)
 
     # ------------------------------------------------------------------ historia anclada
     def _anchor_history(self):
@@ -409,7 +348,7 @@ class Run:
         for i, p in enumerate(C.PROJECTS):
             a = self.announce[i]
             rs = p.real_status
-            if p.id in self.overrides:  # contrafactual: no se fuerza su historia
+            if p.id in self._hist_ov:  # contrafactual: no se fuerza su historia
                 continue
             if p.pre_existing:
                 continue
@@ -444,7 +383,7 @@ class Run:
                                "force_grid": True},
         }
         for pid, spec in scripts.items():
-            if pid not in self.overrides:
+            if pid not in self._hist_ov:
                 f[C.PROJECT_IDX[pid]] = spec
         for i, spec in f.items():
             for kind, t, arg in spec.get("script", []):
@@ -486,11 +425,26 @@ class Run:
                 design = max(min_feasible, thr * (0.5 + 0.49 * self.u[i, 1]))
             self.fuel[i] = design
         if self.cool[i] != AIR and self.water_plan[i] == 0:
-            # Caudal de diseño ~ 3,4 veces el promedio (Quilicura: 50 L/s de derecho, 14,5 usados)
-            avg = self.it[i] * 0.9 * 1.2 * 1000 * v["wue_evap"] / 3600
-            self.water_plan[i] = avg / 0.29 * (1.0 if self.cool[i] == EVAP else 0.4)
+            self.water_plan[i] = self._design_water(i)
         if self.cool[i] == AIR:
             self.water_plan[i] = 0.0
+
+    def _design_water(self, i) -> float:
+        """Caudal de diseño ~ 3,4 veces el promedio (Quilicura: 50 L/s de derecho, 14,5 usados)."""
+        avg = self.it[i] * 0.9 * 1.2 * 1000 * self.v["wue_evap"] / 3600
+        return avg / 0.29 * (1.0 if self.cool[i] == EVAP else 0.4)
+
+    def _set_cooling(self, i, cool):
+        """Cambia el enfriamiento de un proyecto (desde 2027): agua planificada y pedido de red."""
+        if self.status[i] == ST_CANCEL or self.cool[i] == cool:
+            return
+        self.cool[i] = cool
+        self.water_plan[i] = 0.0 if cool == AIR else self._design_water(i)
+        if self.grid[i] in (1, 2):  # la solicitud (o la reserva) cambia con el PUE
+            new = self._req(i)
+            if self.grid[i] == 2:
+                self.headroom[COMMUNE_NODE[self.commune[i]]] -= new - self.req[i]
+            self.req[i] = new
 
     def _route(self, i, t) -> str:
         if t >= C.POLICY_START and self.policy.cumulative and self._rm(i):
@@ -674,7 +628,9 @@ class Run:
         self.version[i] += 1
         self._release_grid(i, t)
         fz = self._forced.get(i, {})
-        if "script" in fz:
+        # mientras dura la historia documentada, el guion decide qué sigue; después de su último
+        # evento, una anulación sigue la regla de todos (rediseñar con aire o desistir)
+        if "script" in fz and t <= max(ts for _k, ts, _a in fz["script"]):
             self.status[i] = ST_PERMIT
             return
         if self.u[i, 5] < 0.7:  # rediseña con enfriamiento por aire y vuelve a tramitar
@@ -753,7 +709,7 @@ class Run:
                     h += 0.02 * self.policy.north_incentive
                 h *= 3  # se revisa cada 3 meses
                 u = self.u_month[i, t]
-                if u < h and not self.fixed_site[i]:
+                if u < h:
                     c_new = self._choose_commune(i, t, exclude_node=n)
                     if c_new is not None:
                         n2 = COMMUNE_NODE[c_new]
@@ -767,6 +723,9 @@ class Run:
     # ------------------------------------------------------------------ política acumulativa
     def _policy_switch(self, t):
         pol = self.policy
+        for pid, ov in self.overrides.items():  # la calculadora: agua o aire desde 2027
+            if "cooling_2027" in ov:
+                self._set_cooling(C.PROJECT_IDX[pid], COOL_CODE[ov["cooling_2027"]])
         if pol.transparency:
             self.transparency_on = True
             self.trust[COMMUNE_RM] -= self.v["transparency_trust"]
@@ -839,7 +798,7 @@ class Run:
                         self.queue[n].insert(0, i)
                 else:
                     u = self.u_month[i, t]
-                    if u < 0.55 and not self.fixed_site[i]:
+                    if u < 0.55:
                         c_new = self._choose_commune(i, t, exclude_node=n)
                         if c_new is not None:
                             self._relocate(i, t, c_new)
@@ -856,7 +815,6 @@ class Run:
     def run(self) -> Run:
         v, pol, P = self.v, self.policy, self.P
         self._active = np.zeros(P["n"])
-        frame_set = set(FRAME_T.tolist()) if self.user_dc is not None or P["n"] > NAG else set()
         y_acc = defaultdict(lambda: np.zeros(NC))
         y_flat = defaultdict(float)
         wue_base = np.array([v["wue_evap"], v["wue_air"], v["wue_hybrid"]])
@@ -890,6 +848,8 @@ class Run:
             wl_c = np.bincount(com, weights=wls, minlength=NC)
             y_acc["mwh"] += mw_c * 730
             y_acc["water_m3"] += wl_c * 730 * 3.6
+            self._p_acc[0] += wls[:NK]
+            self._p_acc[1] += fac[:NK]
             rm_mw = float(mw_c[COMMUNE_RM].sum())
             y_flat["peak_rm"] = max(y_flat["peak_rm"], rm_mw)
             rm_ls = float(wl_c[COMMUNE_RM].sum())
@@ -961,8 +921,6 @@ class Run:
             self._active = (self.opinion > P["theta"]).astype(float)
             self.conflict = np.bincount(ca, weights=self._active * P["w"],
                                         minlength=NC) / W_BY_COMMUNE
-            if t in frame_set:
-                self._record_frame(fac, wls, muni, jobs_b + jobs_o)
             self.trust = np.clip(self.trust * v["trust_decay"], -0.5, 1.2)
             # ---- registros de mitad y fin de año
             if m == 5:
@@ -977,22 +935,6 @@ class Run:
                 y_acc = defaultdict(lambda: np.zeros(NC))
                 y_flat = defaultdict(float)
         return self
-
-    def _record_frame(self, fac, wls, muni, jobs):
-        """Cuadro trimestral: opinión de los hogares de muestra y estado del data center."""
-        f, ui = self.frames, self.user_i
-        f["op"].append(self.opinion[self.P["n_real"]:].astype(np.float32))
-        f["conflict"].append(self.conflict.copy())
-        if ui >= 0:
-            st = int(self.status[ui])
-            if self.lit_active[ui] and st in (ST_PERMIT, ST_WAIT):
-                st = ST_LITIG  # en tribunales manda sobre "esperando red" para este seguimiento
-            f["status"].append(st)
-            f["mw"].append(float(fac[ui]))
-            f["wls"].append(float(wls[ui]))
-            f["jobs"].append(float(jobs[ui]))
-            f["muni"].append(float(muni[ui]))
-            f["air"].append(bool(self.cool[ui] == AIR))
 
     def _handle(self, kind, i, ver, t):
         if kind == "zone_eval":
@@ -1118,6 +1060,10 @@ class Run:
         rep[(self.grid[:NK] == 1) & (rep == ST_PERMIT)] = ST_WAIT
         r["p_status"][:, yi] = rep
         r["p_commune"][:, yi] = self.commune[:NK]
+        r["p_water_ls"][:, yi] = self._p_acc[0] / 12
+        r["p_mw"][:, yi] = self._p_acc[1] / 12
+        self._p_acc[:] = 0
+        r["n_free"][:, yi] = self.headroom
 
 
 def simulate(policy: Policy = STATUS_QUO, seed: int = 0, mode: str = "anchored",

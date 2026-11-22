@@ -351,9 +351,6 @@ main { position: relative; z-index: 1; background: var(--bg); }
 .map-info dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .map-info ul { margin: 6px 0 0; padding-left: 16px; color: var(--muted); }
 .info-close { float: right; border: 0; background: none; cursor: pointer; font: inherit; font-size: var(--step-small); text-decoration: underline; color: var(--ink); }
-.places { display: flex; gap: 4px; }
-.places button { border: 0; border-radius: 0; background: var(--bg); padding: 6px 10px; cursor: pointer; font: inherit; font-size: 13px; }
-.places button:hover { background: var(--ink); color: var(--light); }
 .leaflet-container, .leaflet-bar a { font-family: inherit !important; }
 .leaflet-tooltip { font-family: inherit; font-size: 13px; border-radius: 0; }
 
@@ -450,47 +447,6 @@ ul.where li { margin-bottom: 6px; }
 .map-key .key-hint { margin: 6px 0 0; color: var(--muted); }
 @media (max-width: 720px) { .map-key { width: 200px; } }
 
-/* ---------- coloca un data center */
-:root { --with: #e0622a; --without: #4f63b0; }
-.place { padding: 40px var(--m) 160px; }
-.place .sim-head { align-items: flex-end; }
-.place-lead { max-width: 46ch; margin: 0; color: var(--muted); }
-.place-body { display: grid; grid-template-columns: 270px minmax(0, 1fr) 440px; gap: 24px; margin-top: 56px; align-items: start; }
-.place-form { margin: 0; }
-.place-step { margin: 4px 0 0; font-weight: 600; display: flex; gap: 10px; align-items: center; }
-.place-step b {
-  display: inline-grid; place-items: center; width: 24px; height: 24px; flex: none;
-  background: var(--ink); color: var(--light); font-size: 13px;
-}
-.place-examples { font-size: var(--step-small); color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-.place-examples button {
-  border: 0; border-radius: 0; background: var(--surface); padding: 5px 9px; cursor: pointer; font: inherit; font-size: 13px; color: var(--ink);
-  transition: background-color 160ms;
-}
-.place-examples button:hover { background: var(--ink); color: var(--light); }
-.place-site { font-size: var(--step-small); background: var(--surface); padding: 12px 14px; line-height: 1.45; }
-.place-site p { margin: 6px 0 0; }
-.place-site b { font-weight: 600; font-size: var(--step-body); }
-.place-site .warn { color: #86310d; }
-.site-dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 8px 0 0; }
-.site-dl dt { color: var(--muted); }
-.site-dl dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
-.place-form .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-#placeMap { height: 600px; background: #dfe2e7; cursor: crosshair; }
-.place-card .leaflet-grab { cursor: crosshair; }
-.place-card .leaflet-dragging .leaflet-grab { cursor: grabbing; }
-.you-icon i {
-  display: block; width: 16px; height: 16px; margin: 3px; background: var(--ink);
-  outline: 2px solid #ffffff; transform: rotate(45deg); box-shadow: 0 0 0 5px rgba(11, 12, 14, 0.18);
-}
-.mk.you { width: 11px; height: 11px; border-radius: 0; background: var(--ink); transform: rotate(45deg); margin: 0 2px; }
-.mk.hh { width: 9px; height: 9px; background: #ef8356; }
-.mk.area { width: 16px; height: 11px; border-radius: 0; background: rgba(84, 91, 103, 0.2); }
-.place-results.loading .place-out { opacity: 0.45; transition: opacity 200ms; }
-.place-out .bands .band { cursor: default; }
-.place-mid { min-width: 0; }
-.place-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
-.place-charts .ptable { grid-column: 1 / -1; }
 .pchart { margin: 0; min-width: 0; background: var(--surface); padding: 14px 14px 6px; }
 .pchart figcaption b { display: block; font-weight: 600; line-height: 1.25; }
 .pchart figcaption span { display: block; font-size: var(--step-small); color: var(--muted); }
@@ -520,15 +476,46 @@ ul.where li { margin-bottom: 6px; }
 .ptable > div { overflow-x: auto; margin-top: 8px; }
 .close-text a { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
 @media (max-width: 1200px) {
-  .place-body { grid-template-columns: 1fr; }
-  .place-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-  .place-form > .place-step, .place-form > .place-examples, .place-form > .place-site, .place-form > .custom-note { grid-column: 1 / -1; }
-  #placeMap { height: 520px; }
 }
 @media (max-width: 720px) {
-  .place { padding: 20px var(--m) 100px; }
-  .place-charts { grid-template-columns: 1fr; }
-  .place-form { display: flex; }
-  .place-form .btn { width: 100%; }
-  #placeMap { height: 440px; }
+}
+
+/* ---------- calculadora de evaluación conjunta */
+.hero-alt {
+  display: block; width: fit-content; margin-top: 18px; font-size: var(--step-small);
+  text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; transition: color 160ms;
+}
+.hero-alt:hover { color: var(--accent); }
+.calc { padding: 180px var(--m) 20px; }
+.calc-lead { max-width: 62ch; margin: 0; color: var(--muted); }
+.calc-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 600px); gap: 48px; margin-top: 48px; align-items: start; }
+.calc-ask { margin: 0 0 14px; font-size: var(--step-lead); font-weight: 600; line-height: 1.25; max-width: 22ch; }
+.calc-seg button { min-height: 48px; min-width: 96px; font-size: var(--step-body); }
+.calc-results .band .delta { display: block; margin-top: 4px; font-size: var(--step-small); color: var(--muted); }
+.calc-results .band .delta b { color: var(--ink); font-weight: 600; }
+.calc-sim { margin: 32px 0 0; max-width: 40ch; font-size: var(--step-lead); line-height: 1.35; min-height: 3.6em; }
+.calc-results .band .val { font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.4rem); }
+.calc-sim b { font-weight: 600; }
+.calc-detail { margin-top: 48px; background: var(--surface); padding: 0 16px; }
+.calc-detail summary { cursor: pointer; padding: 14px 0; font-weight: 600; }
+.calc-detail[open] { padding-bottom: 12px; }
+.calc-table td:first-child { min-width: 10em; }
+.calc-table td:first-child b { font-weight: 600; }
+.calc-table .range { display: block; line-height: 1.35; }
+.calc-table a { color: var(--accent); }
+.calc-anon td { color: var(--muted); }
+@media (max-width: 1200px) {
+  .calc-body { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .calc { padding: 120px var(--m) 0; }
+  .calc-seg { display: flex; }
+  .calc-seg button { flex: 1; }
+  /* una fila por proyecto, apilada como la tabla de la prueba */
+  .calc-table thead { display: none; }
+  .calc-table, .calc-table tbody, .calc-table tr, table.calc-table td { display: block; }
+  .calc-table tr { padding: 8px 4px; }
+  table.calc-table td { padding: 2px 6px; }
+  table.calc-table td:nth-child(2), table.calc-table td:nth-child(3) { display: inline-block; margin-right: 12px; vertical-align: top; }
+  .calc-table td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); }
 }

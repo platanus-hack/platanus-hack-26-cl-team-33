@@ -66,6 +66,8 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
   .then(([story, meta]) => {
     S.story = story;
     S.meta = meta;
+    // la calculadora de evaluación conjunta (calc.js) no depende del mapa ni de las reglas
+    if (typeof initCalc === "function") { try { initCalc(meta); } catch (e) { console.error(e); } }
     S.noteText = `Corre ${story.n_custom || 100} futuros; puede tardar hasta un minuto.`;
     $("#customNote").textContent = S.noteText;
     document.querySelectorAll("[data-n-custom]").forEach((el) => { el.textContent = fmt(story.n_custom || 100); });
@@ -80,7 +82,6 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
     fillProof();
     Object.keys(lazy).forEach((id) => loadLazy(document.getElementById(id)));  // abiertos antes de que llegaran los datos
     initMap();
-    if (typeof initPlace === "function") initPlace(meta);
     loadEnsemble("status_quo").then(() => {
       updateMap();
       // el resto de las reglas en segundo plano: el mapa usa una sola escala de colores para todas

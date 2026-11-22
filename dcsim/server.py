@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import json
-import math
 import os
 import threading
 from collections import Counter, OrderedDict
@@ -15,6 +14,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
@@ -22,17 +22,16 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 from . import catalog as C
-from . import place as PL
 from .insights import METRICS, hypotheses, scenario_deltas, winners_losers
 from .model import STATUS_LABELS, SYNTH_RATE_MAX, nominal_it_mw
 from .montecarlo import run_ensemble
 from .params import PARAMS
 from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS, STATUS_QUO, Policy
+from .sea import SEA
 from .validation import run_validation
 
 N_PRESET = 200
 N_CUSTOM = int(os.environ.get("DCSIM_N_CUSTOM", "100"))  # futuros por regla propia
-N_PLACE = int(os.environ.get("DCSIM_N_PLACE", "40"))  # futuros (pares con/sin) por data center
 WEB = Path(__file__).resolve().parent.parent / "web"
 
 @asynccontextmanager
@@ -125,7 +124,10 @@ def meta() -> dict:
                       "fuel_t": p.fuel_t, "real_status": p.real_status,
                       "anonymous": p.anonymous, "pre_existing": p.pre_existing,
                       "announce": p.announce, "water_right_ls": p.water_right_ls,
-                      "dist_homes_m": p.dist_homes_m, "hist": list(p.hist), "src": p.src}
+                      "dist_homes_m": p.dist_homes_m, "hist": list(p.hist), "src": p.src,
+                      # enfriamiento de hoy (Cerrillos se rediseñó con aire) y lo declarado al SEA
+                      "cooling_now": p.extra.get("cooling_now", p.cooling),
+                      "sea": SEA.get(p.id)}
                      for p in C.PROJECTS],
         "nodes": [{"id": n.id, "name": n.name, "headroom_mw": n.headroom_mw,
                    "expansions": [list(e) for e in n.expansions], "src": n.src}
@@ -136,11 +138,9 @@ def meta() -> dict:
         "params": [asdict(p) for p in PARAMS],
         "metrics": {k: {"label": v[0], "unit": v[1], "good_up": v[2]} for k, v in METRICS.items()},
         "observed": C.OBSERVED,
-        "place": {"years": PL.YEARS, "sizes": list(PL.SIZES), "coolings": list(PL.COOLINGS),
-                  "radius_km": PL.RADIUS_KM, "n": N_PLACE,
-                  "areas": [[round(la, 4), round(lo, 4), r, round(d)]
-                            for _c, la, lo, r, d in PL.COMPS],
-                  "rules": [{"id": k, "name": SCENARIOS[k]["name"]} for k in PL.RULES]},
+        "calc": {"projects": [p["id"] for p in calc_projects()], "n": N_CUSTOM,
+                 "max_changes": CALC_MAX_TOGGLES, "demo_commune": CALC_DEMO_COMMUNE,
+                 "demo_projects": sorted(calc_demo_overrides())},
     }
 
 
@@ -228,48 +228,88 @@ def baseline() -> dict:
     return _baseline(N_CUSTOM)
 
 
-@app.get("/api/place/site")
-def place_site(lat: float, lon: float) -> dict:
-    """Comuna, nodo de red, acuífero y hogares alrededor de un punto (rápido, sin simular)."""
-    if not (math.isfinite(lat) and math.isfinite(lon) and -56 < lat < -17 and -76 < lon < -66):
-        raise HTTPException(400, "El punto debe estar en Chile")
-    return PL.site_info(round(lat, 4), round(lon, 4))
+# -------------------------------------------------------- calculadora de evaluación conjunta
+# Suma todos los data centers de una comuna (operando, en obra, en trámite o esperando red) y deja
+# cambiar desde 2027 el enfriamiento de los que todavía no operan. Corre los mismos futuros que
+# «Tu regla» y se compara con lo declarado en esas mismas semillas.
+CALC_KEYS = ["c_water_ls", "c_demand", "c_waitlist", "c_conflict"]
+CALC_GOOD_UP = {"c_water_ls": False, "c_demand": None, "c_waitlist": False, "c_conflict": False}
+CALC_MAX_TOGGLES = 12
 
 
-class PlaceRequest(BaseModel):
+def calc_projects() -> list[dict]:
+    """Proyectos conocidos cuyo enfriamiento se puede cambiar: los que aún no operan."""
+    return [{"id": p.id, "commune": p.commune, "cooling": p.extra.get("cooling_now", p.cooling)}
+            for p in C.PROJECTS if p.real_status != "operando" and not p.pre_existing]
+
+
+# La pregunta de la portada: Quilicura, y sus proyectos que aún no operan enfriando con agua desde
+# 2027. Se precalcula (python -m dcsim.precompute) para que la página responda al instante.
+CALC_DEMO_COMMUNE = "quilicura"
+
+
+def calc_demo_overrides() -> dict:
+    return {p["id"]: {"cooling_2027": "evaporativo"} for p in calc_projects()
+            if p["commune"] == CALC_DEMO_COMMUNE and p["cooling"] != "evaporativo"}
+
+
+class CalcRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    lat: float
-    lon: float
-    it_mw: float = 30
-    cooling: str = "evaporativo"
-    year: int = 2027
-    hv_line: bool = False
-    grid_priority: bool = False
-    rule: str = "status_quo"
+    cooling: dict[str, Literal["aire", "evaporativo"]] = Field(default_factory=dict)
 
 
-_place_lock = threading.Lock()
-_place_memo: OrderedDict = OrderedDict()
+def calc_overrides(cooling: dict[str, str]) -> dict:
+    """Valida y deja solo los cambios respecto de lo declarado (así el caché no se duplica)."""
+    allowed = {p["id"]: p["cooling"] for p in calc_projects()}
+    unknown = sorted(set(cooling) - set(allowed))
+    if unknown:
+        raise HTTPException(400, f"No se puede cambiar el enfriamiento de: {', '.join(unknown)}")
+    ov = {pid: {"cooling_2027": c} for pid, c in sorted(cooling.items()) if c != allowed[pid]}
+    if len(ov) > CALC_MAX_TOGGLES:
+        raise HTTPException(400, f"Como máximo {CALC_MAX_TOGGLES} cambios a la vez")
+    return ov
 
 
-@app.post("/api/place")
-def place(req: PlaceRequest) -> dict:
-    """Corre N_PLACE futuros con y sin el data center del usuario."""
-    try:
-        spec = PL.normalize(req.model_dump())
-        key = (tuple(sorted(spec.items())), N_PLACE)
-        with _place_lock:
-            if key in _place_memo:
-                _place_memo.move_to_end(key)
-                return _place_memo[key]
-        res = PL.simulate(spec, n=N_PLACE)
-    except ValueError as e:
-        raise HTTPException(400, str(e)) from e
-    with _place_lock:
-        _place_memo[key] = res
-        while len(_place_memo) > 24:
-            _place_memo.popitem(last=False)
-    return res
+def _calc_compare(res: dict, base: dict) -> dict:
+    """Por comuna y cifra, en cuántos de los mismos futuros queda mejor, peor o igual en 2035."""
+    out = {}
+    for k in CALC_KEYS:
+        a = np.array(res["paired_communes"][k])[:, :, 1]  # (n, comunas) en 2035
+        b = np.array(base["paired_communes"][k])[:, :, 1]
+        more, less = (a > b).sum(axis=0), (a < b).sum(axis=0)
+        good_up = CALC_GOOD_UP[k]
+        rows = []
+        for ci in range(len(C.COMMUNES)):
+            c = {"more": int(more[ci]), "less": int(less[ci])} if good_up is None else (
+                {"better": int(less[ci]), "worse": int(more[ci])} if not good_up
+                else {"better": int(more[ci]), "worse": int(less[ci])})
+            rows.append({**c, "same": int(a.shape[0] - more[ci] - less[ci])})
+        out[k] = rows
+    return out
+
+
+_calc: OrderedDict = OrderedDict()
+
+
+@app.post("/api/calc")
+def calc(req: CalcRequest) -> dict:
+    """Todos los data centers de cada comuna, con el enfriamiento elegido desde 2027."""
+    ov = calc_overrides(req.cooling)
+    n = N_CUSTOM
+    base = _baseline(n)
+    if not ov:
+        return {**base, "compare": None, "changes": {}}
+    key = (json.dumps(ov, sort_keys=True), n)
+    with _custom_lock:  # una simulación a la vez: comparte la CPU con «Tu regla»
+        if key not in _calc:
+            demo = ov == calc_demo_overrides()  # la pregunta de la portada viene precalculada
+            _calc[key] = run_ensemble(STATUS_QUO, n=n, use_cache=demo, overrides=ov)
+            while len(_calc) > _CUSTOM_MAX:
+                _calc.popitem(last=False)
+        _calc.move_to_end(key)
+        res = _calc[key]
+    return {**res, "compare": _calc_compare(res, base),
+            "changes": {pid: o["cooling_2027"] for pid, o in ov.items()}}
 
 
 @app.get("/api/validation")

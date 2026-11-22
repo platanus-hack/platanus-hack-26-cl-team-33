@@ -19,7 +19,7 @@ import time
 
 from .montecarlo import CACHE_DIR, _cache_key, run_ensemble
 from .policy import HYPOTHESIS_SCENARIOS, SCENARIOS, STATUS_QUO
-from .server import N_CUSTOM, N_PRESET
+from .server import N_CUSTOM, N_PRESET, calc_demo_overrides
 from .validation import run_validation
 
 N_BASELINE = sorted({60, 100, N_CUSTOM})  # futuros de "Tu regla" (DCSIM_N_CUSTOM)
@@ -35,9 +35,12 @@ def main() -> None:
         keep.add(f"{_cache_key(pol, N_PRESET, 'anchored')}.json")
     run_validation(n=N_PRESET)
     keep.add(f"{_cache_key(STATUS_QUO, N_PRESET, 'free')}.json")
+    demo = calc_demo_overrides()  # la pregunta de la portada (Quilicura con agua)
     for n in N_BASELINE:
         run_ensemble(STATUS_QUO, n=n)
         keep.add(f"{_cache_key(STATUS_QUO, n, 'anchored')}.json")
+        run_ensemble(STATUS_QUO, n=n, overrides=demo)
+        keep.add(f"{_cache_key(STATUS_QUO, n, 'anchored', demo)}.json")
     # Solo se borran ensambles de los tamaños de este script; findings.json, sensitivity.json y
     # explore_raw.json no calzan con el patrón.
     sizes = {N_PRESET, *N_BASELINE}

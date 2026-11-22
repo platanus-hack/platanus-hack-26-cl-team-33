@@ -13,17 +13,12 @@ def test_non_finite_numbers_are_rejected_not_crashed():
     with TestClient(app) as client:
         for raw in ('{"policy": {"permit_speed": NaN}}', '{"policy": {"permit_speed": 1e309}}'):
             assert client.post("/api/run", content=raw, headers=JSON).status_code == 422, raw
-        assert client.get("/api/place/site", params={"lat": "nan", "lon": -70.7}).status_code == 400
-        assert client.get("/api/place/site", params={"lat": 10, "lon": -70.7}).status_code == 400
 
 
-def test_unknown_fields_and_rules_are_rejected():
+def test_unknown_fields_are_rejected():
     with TestClient(app) as client:
         assert client.post("/api/run", json={"policy": {}, "extra": 1}).status_code == 422
-        spot = {"lat": -33.4, "lon": -70.7}
-        assert client.post("/api/place", json={**spot, "zzz": 1}).status_code == 422
-        # la sección solo ofrece las reglas de place.RULES
-        assert client.post("/api/place", json={**spot, "rule": "paquete"}).status_code == 400
+        assert client.post("/api/calc", json={"cooling": {}, "extra": 1}).status_code == 422
 
 
 def test_front_page_proof_shows_only_validation_checks():
