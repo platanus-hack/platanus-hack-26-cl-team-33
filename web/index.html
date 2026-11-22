@@ -20,11 +20,13 @@
         <a class="wordmark" href="/">Aterriza</a>
         <div class="hero-talk">
           <p class="hero-lead">Simulamos qué pasa con el agua, la luz y los vecinos de Santiago cuando los data centers se suman.</p>
-          <a class="btn" href="#simular">Probar una regla</a>
+          <a class="btn" href="#calculadora">Calcular una comuna</a>
+          <a class="hero-alt" href="#simular">o prueba una regla para todo Santiago</a>
         </div>
       </div>
       <div class="hero-right">
         <nav class="nav" aria-label="Secciones">
+          <a href="#calculadora">Calcular</a>
           <a href="#simular">Simular</a>
           <a href="#colocar">Colocar</a>
           <a href="#hallazgos">Hallazgos</a>
@@ -41,6 +43,46 @@
         </figure>
       </div>
     </header>
+
+    <!-- Calculadora de evaluación conjunta: todos los data centers de una comuna, sumados -->
+    <section class="calc" id="calculadora" aria-labelledby="calc-title">
+      <div class="sim-head" data-rise>
+        <h2 id="calc-title" class="head"><span class="soft">Con todo lo aprobado y en trámite,</span> ¿alcanza el agua y la red?</h2>
+        <p class="place-lead calc-lead">Cada data center se evalúa solo. Aquí sumamos todos los de una comuna: los que operan, los que se construyen, los que están en trámite y los que esperan red. Así el SEA, el municipio y los vecinos discuten las mismas cifras durante la evaluación ambiental.</p>
+      </div>
+      <ul class="calc-roles" data-rise>
+        <li><b>SEA y servicios</b><span>¿Alcanzan el agua y la red con todo lo ya aprobado?</span></li>
+        <li><b>Municipio y vecinos</b><span>¿Cuánto es todo junto, no solo este proyecto?</span></li>
+        <li><b>Empresa</b><span>¿Enfriar con agua o con aire?</span></li>
+      </ul>
+      <div class="calc-body">
+        <form class="custom calc-form" id="calcForm" data-rise>
+          <label>Comuna
+            <select id="calcCommune" name="commune" disabled><option>Cargando…</option></select></label>
+          <div class="calc-projects" id="calcProjects"><p class="custom-note">Cargando los proyectos…</p></div>
+          <button class="btn" type="submit" id="calcRun" disabled>Calcular</button>
+          <p class="custom-note" id="calcNote" aria-live="polite">Elige agua o aire para los que aún no operan y presiona Calcular.</p>
+        </form>
+        <div class="numbers calc-results" id="calcResults" data-rise>
+          <div class="calc-top">
+            <p class="rule-summary" id="calcSummary" aria-live="polite">Cargando…</p>
+            <div class="seg" role="group" aria-label="Año de las cifras">
+              <button type="button" data-cyear="2030" aria-pressed="false">2030</button>
+              <button type="button" data-cyear="2035" aria-pressed="true">2035</button>
+            </div>
+          </div>
+          <div class="bands" id="calcBands">
+            <div class="band" data-ck="water"><div><b>Agua que usan sus data centers</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-ck="power"><div><b>Electricidad de sus data centers</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-ck="grid"><div><b>Red eléctrica libre en su nodo</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-ck="wait"><div><b>Esperando conexión a la red</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
+            <div class="band" data-ck="conflict"><div><b>Vecinos movilizados en contra</b><span class="note"></span></div><span class="val">…</span><span class="delta"></span></div>
+          </div>
+          <div class="calc-changes" id="calcChanges" hidden></div>
+          <p class="sim-foot" id="calcFoot">Son resultados de simular <span data-calc-n>60</span> futuros mes a mes (permisos, la fila de conexión del CEN, tribunales y vecinos), no una fórmula: con aire baja el agua, pero la red se llena antes. El cambio de enfriamiento rige desde 2027; la historia documentada hasta noviembre de 2026 queda como fue. Lo declarado viene del SEA cuando existe; si no, son supuestos marcados como tales. Cada cifra es el valor típico (mediana) y el rango donde cae el 90% de los futuros.</p>
+        </div>
+      </div>
+    </section>
 
     <!-- El simulador: reglas, mapa y cifras en un solo lugar -->
     <section class="sim" id="simular" aria-labelledby="sim-title">
@@ -388,7 +430,7 @@
   <footer class="footer">
     <div class="foot-cols">
       <div><b>Aterriza</b><span>Simulador del efecto acumulado de los data centers en las comunas de Chile, 2012 a 2035.</span></div>
-      <div><b>Secciones</b><a href="#simular">Simular una regla</a><a href="#colocar">Colocar un data center</a><a href="#hallazgos">Hallazgos</a><a href="#prueba">La prueba</a><a href="#detalle">Detalle técnico</a></div>
+      <div><b>Secciones</b><a href="#calculadora">Calcular una comuna</a><a href="#simular">Simular una regla</a><a href="#colocar">Colocar un data center</a><a href="#hallazgos">Hallazgos</a><a href="#prueba">La prueba</a><a href="#detalle">Detalle técnico</a></div>
       <div><b>Datos</b><span>Informe de investigación, nov-2026</span><span>CEN, DGA, SEA, Censo 2017</span><span>Las cifras de prensa no son fuentes primarias</span></div>
       <div><b>Equipo 33</b><span>Platanus Hack 26: Santiago</span><span>Track Simulations</span></div>
     </div>
@@ -398,5 +440,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="/static/story.js"></script>
   <script src="/static/place.js"></script>
+  <script src="/static/calc.js"></script>
 </body>
 </html>
