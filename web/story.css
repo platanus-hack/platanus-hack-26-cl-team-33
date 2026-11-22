@@ -532,3 +532,57 @@ ul.where li { margin-bottom: 6px; }
   .place-form .btn { width: 100%; }
   #placeMap { height: 440px; }
 }
+
+/* ---------- calculadora de evaluación conjunta */
+.hero-alt {
+  display: block; width: fit-content; margin-top: 18px; font-size: var(--step-small);
+  text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; transition: color 160ms;
+}
+.hero-alt:hover { color: var(--accent); }
+.calc { padding: 180px var(--m) 20px; }
+.calc-lead { max-width: 54ch; }
+.calc-roles { list-style: none; margin: 48px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.calc-roles li { background: var(--surface); padding: 14px 18px; display: flex; flex-direction: column; gap: 2px; }
+.calc-roles b { font-weight: 600; line-height: 1.25; }
+.calc-roles span { font-size: var(--step-small); color: var(--muted); line-height: 1.35; }
+.calc-body { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 24px; margin-top: 24px; align-items: start; }
+.calc-form { margin: 0; min-width: 0; }
+.calc-form select { max-width: 360px; }
+.calc-form .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.calc-projects { background: var(--surface); padding: 6px 12px 12px; min-width: 0; }
+.calc-table td:first-child { min-width: 10em; }
+.calc-table td:nth-child(2) { white-space: nowrap; }
+.calc-table td:first-child b { font-weight: 600; }
+.calc-table .range { display: block; line-height: 1.35; }
+.calc-table .seg button { min-height: 32px; }
+.calc-table tbody tr:nth-child(odd) .seg button:not([aria-pressed="true"]) { background: var(--surface); }
+.calc-table .seg button:not([aria-pressed="true"]):hover { background: #d5d9e0; }
+.calc-table a { color: var(--accent); }
+.calc-anon td { color: var(--muted); }
+.calc-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px 16px; margin-bottom: 18px; }
+.calc-top .rule-summary { margin: 0; flex: 1 1 240px; }
+.calc-results .bands, .calc-changes { transition: opacity 200ms; }
+.calc-results.stale .bands, .calc-results.stale .calc-changes { opacity: 0.45; }
+.calc-changes { margin-top: 18px; font-size: var(--step-small); line-height: 1.45; }
+.calc-changes p { margin: 0 0 6px; font-weight: 600; }
+.calc-changes ul { margin: 0; padding-left: 18px; }
+.calc-changes li + li { margin-top: 8px; }
+.calc-changes b { font-weight: 600; }
+@media (max-width: 1200px) {
+  .calc-body { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .calc { padding: 120px var(--m) 0; }
+  .calc-roles { grid-template-columns: 1fr; margin-top: 32px; }
+  .calc-form .btn { width: 100%; }
+  .calc-form select { max-width: none; }
+  .calc-projects { padding: 4px 4px 8px; }
+  /* una fila por proyecto, apilada como la tabla de la prueba */
+  .calc-table thead { display: none; }
+  .calc-table, .calc-table tbody, .calc-table tr, table.calc-table td { display: block; }
+  .calc-table tr { padding: 8px 4px; }
+  table.calc-table td { padding: 2px 6px; }
+  table.calc-table td:nth-child(2), table.calc-table td:nth-child(3) { display: inline-block; margin-right: 12px; vertical-align: top; }
+  .calc-table td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); }
+  .calc-table td[data-label] .seg { vertical-align: middle; margin: 2px 0; }
+}
