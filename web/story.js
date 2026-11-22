@@ -82,7 +82,6 @@ Promise.all([fetch("/api/story").then((r) => r.json()), fetch("/api/meta").then(
     fillProof();
     Object.keys(lazy).forEach((id) => loadLazy(document.getElementById(id)));  // abiertos antes de que llegaran los datos
     initMap();
-    if (typeof initPlace === "function") initPlace(meta);
     loadEnsemble("status_quo").then(() => {
       updateMap();
       // el resto de las reglas en segundo plano: el mapa usa una sola escala de colores para todas

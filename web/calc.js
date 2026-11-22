@@ -120,13 +120,27 @@
     return p.pre_existing ? "operando" : "anunciado";
   }
 
+  // el trade-off a operación plena, con los valores centrales del modelo (params.py): cuánta agua
+  // usa enfriando con agua y cuánta electricidad más pide enfriando con aire. Es solo ingeniería;
+  // los resultados de la derecha además incluyen permisos, la fila de la red y tribunales.
+  function tradeOff(p) {
+    const v = Object.fromEntries(CAL.meta.params.map((x) => [x.key, x.base]));
+    const mw = p.it_mw * v.lf_max;  // MW de servidores con la carga típica
+    const water = mw * v.pue_evap * 1000 * v.wue_evap / 3600;
+    const extra = mw * (v.pue_air - v.pue_evap);
+    const peak = mw * (v.pue_air * v.peak_pue_ratio - v.pue_evap * (1 + 0.6 * (v.peak_pue_ratio - 1)));
+    const homes = water * 86400 / 500;
+    return `A plena carga: con agua usa ~${lsTxt(water)} L/s (el agua de ${fmt(homes)} hogares); con aire, ~${mwTxt(extra)} MW más de electricidad (~${mwTxt(peak)} MW en verano).`;
+  }
+
   function coolCell(p) {
     if (!canSwitch(p)) return esc(COOL[p.cooling_now] || p.cooling_now);
     const c = current(p);
     const btn = (k, label) => `<button type="button" data-pid="${esc(p.id)}" data-cool="${k}" aria-pressed="${c === k}">${label}</button>`;
     const note = c !== p.cooling_now ? `declarado ${COOL[p.cooling_now]}; cambia desde 2027` : wasText(p);
     return `<div class="seg" role="group" aria-label="Enfriamiento de ${esc(p.name)} desde 2027">${btn("evaporativo", "Agua")}${btn("aire", "Aire")}</div>`
-      + `<span class="range" data-was="${esc(p.id)}">${esc(note)}</span>`;
+      + `<span class="range" data-was="${esc(p.id)}">${esc(note)}</span>`
+      + `<span class="range calc-trade">${esc(tradeOff(p))}</span>`;
   }
 
   // lo declarado al SEA, si existe; si no, de dónde sale lo que usamos
